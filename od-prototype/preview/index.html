@@ -1,0 +1,287 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spectra Corpus Toolset</title>
+  <style>
+    :root{
+      --bg:oklch(97.8% .004 250);
+      --surface:oklch(100% 0 0);
+      --panel:oklch(95.5% .006 250);
+      --fg:oklch(23% .010 250);
+      --muted:oklch(50% .012 250);
+      --border:oklch(88% .006 250);
+      --border-strong:oklch(73% .010 250);
+      --accent:oklch(54% .150 252);
+      --accent-soft:oklch(93% .030 252);
+      --success:oklch(58% .130 148);
+      --warn:oklch(67% .130 78);
+      --danger:oklch(58% .160 28);
+      --font-display:'Segoe UI Variable Display','Aptos Display','Segoe UI',system-ui,sans-serif;
+      --font-body:'Segoe UI Variable Text','Aptos','Segoe UI',system-ui,sans-serif;
+      --font-mono:'Cascadia Mono','JetBrains Mono',ui-monospace,Menlo,monospace;
+      --radius:2px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;overflow:hidden;background:var(--bg);color:var(--fg);font:14px/1.5 var(--font-body);-webkit-font-smoothing:antialiased}
+    button,input,select{font:inherit;color:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+    .app{min-height:100vh;display:grid;grid-template-rows:74px 58px minmax(0,1fr) 24px;background:var(--bg)}
+    .banner{display:flex;align-items:center;gap:22px;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border-strong)}
+    .brand{display:flex;align-items:center;gap:12px;min-width:300px}
+    .mark{width:30px;height:30px;border:2px solid var(--accent);border-left-color:transparent;border-radius:50%;position:relative;flex:0 0 auto}
+    .mark:after{content:"";position:absolute;inset:7px;background:var(--accent);border-radius:50%}
+    .brand h1{margin:0;font:600 20px/1.05 var(--font-display);letter-spacing:-.02em}
+    .brand p{margin:5px 0 0;color:var(--muted);font-size:12px;letter-spacing:.01em}
+    .banner-copy{min-width:0;max-width:780px;color:var(--muted);font-size:13px;text-wrap:pretty}
+    .banner-copy strong{color:var(--fg);font-weight:560}
+    .banner-actions{margin-left:auto;display:flex;align-items:center;gap:10px;flex:0 0 auto}
+    .lang-switch{display:inline-grid;grid-template-columns:1fr 1fr;border:1px solid var(--border-strong);background:var(--panel);border-radius:var(--radius);overflow:hidden}
+    .lang-switch button{width:42px;height:30px;border:0;background:transparent;color:var(--muted);font:600 11px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase}
+    .lang-switch button.active{background:var(--surface);color:var(--fg);box-shadow:inset 0 -2px 0 var(--accent)}
+    .account-btn,.primary-btn,.ghost-btn{height:32px;border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--surface);padding:0 12px}
+    .account-btn{display:inline-flex;align-items:center;gap:8px;font-weight:560;white-space:nowrap}
+    .avatar{width:20px;height:20px;display:grid;place-items:center;border-radius:50%;background:var(--accent-soft);color:var(--accent);font:700 11px/1 var(--font-mono)}
+    .primary-btn{border-color:var(--accent);background:var(--accent);color:oklch(100% 0 0);font-weight:560}
+    .ghost-btn:hover,.account-btn:hover{background:var(--panel)}
+    .tool-tabs{display:flex;align-items:end;gap:5px;padding:0 24px;background:var(--panel);border-bottom:1px solid var(--border-strong);overflow-x:auto}
+    .tool-tab{min-width:178px;height:47px;display:grid;align-content:center;gap:2px;border:1px solid transparent;border-bottom:0;border-radius:var(--radius) var(--radius) 0 0;background:transparent;padding:0 14px;text-align:left;color:var(--muted);position:relative;white-space:nowrap}
+    .tool-tab span:first-child{font-weight:620;letter-spacing:-.01em}
+    .tool-tab span:last-child{font-size:11px;letter-spacing:.01em}
+    .tool-tab.active{height:53px;background:var(--surface);color:var(--fg);border-color:var(--border-strong);box-shadow:inset 0 3px 0 var(--accent)}
+    #main_frame{min-height:0;display:grid;grid-template-rows:54px minmax(0,1fr);background:var(--surface)}
+    .frame-head{display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface)}
+    .frame-title{min-width:280px}.frame-title strong{display:block;font:600 15px/1 var(--font-display);letter-spacing:-.01em}.frame-title span{display:block;margin-top:5px;color:var(--muted);font-size:11px;letter-spacing:.01em}
+    .frame-actions{margin-left:auto;display:flex;align-items:center;gap:8px}.status-chip{height:28px;display:inline-flex;align-items:center;gap:7px;padding:0 9px;border:1px solid var(--border);background:var(--panel);color:var(--muted);font:11px/1 var(--font-mono);white-space:nowrap}.status-dot{width:7px;height:7px;border-radius:50%;background:var(--success)}
+    .frame-body{min-height:0;overflow:auto;padding:22px;background:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px),var(--surface);background-size:32px 32px}
+    .page-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);gap:16px;min-height:100%}
+    .panel{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius);min-width:0;box-shadow:0 1px 0 color-mix(in oklch,var(--fg) 6%,transparent)}
+    .panel-head{height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel)}
+    .panel-head h2{margin:0;font:600 13px/1 var(--font-display);letter-spacing:-.01em}.panel-head small{color:var(--muted);font:11px/1 var(--font-mono)}
+    .panel-body{padding:14px}.hero-card{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:stretch}.hero-copy{padding:22px}.hero-copy h2{max-width:680px;margin:0 0 10px;font:600 clamp(30px,4vw,52px)/1.04 var(--font-display);letter-spacing:-.025em}.hero-copy p{max-width:70ch;margin:0;color:var(--muted);font-size:15px}.metric-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:22px}.metric{border:1px solid var(--border);background:var(--bg);padding:12px}.metric strong{display:block;font:600 22px/1 var(--font-mono);letter-spacing:-.02em}.metric span{display:block;margin-top:6px;color:var(--muted);font-size:12px}.schema-card{border:1px solid var(--border-strong);background:var(--fg);color:oklch(96% .004 250);padding:16px;display:grid;align-content:space-between;gap:14px}.schema-card small{font:11px/1 var(--font-mono);letter-spacing:.08em;text-transform:uppercase;color:oklch(75% .012 250)}.schema-card code{white-space:pre-wrap;font:12px/1.55 var(--font-mono);color:oklch(90% .018 250)}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.module-card{border:1px solid var(--border);background:var(--bg);padding:13px;min-height:130px;display:grid;align-content:space-between;gap:14px}.module-card.selected{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}.module-card h3{margin:0 0 7px;font:600 15px/1.2 var(--font-display);letter-spacing:-.01em}.module-card p{margin:0;color:var(--muted);font-size:13px}.module-card footer{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font:11px/1 var(--font-mono)}
+    .detail-list{display:grid;gap:10px}.detail-list article{border:1px solid var(--border);background:var(--bg);padding:12px}.detail-list header{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;color:var(--muted);font:11px/1 var(--font-mono);letter-spacing:.02em}.detail-list p{margin:0;color:var(--muted);font-size:13px}.detail-list strong{color:var(--fg);font-weight:560}
+    .table-wrap{overflow:auto;border:1px solid var(--border);background:var(--surface)}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{padding:9px 10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}.table th{background:var(--panel);font:600 11px/1 var(--font-mono);color:var(--muted);letter-spacing:.04em;text-transform:uppercase}.table tr{cursor:pointer}.table tbody tr:hover,.table tr.active{background:var(--accent-soft)}.badge{display:inline-flex;align-items:center;height:22px;padding:0 7px;border:1px solid var(--border);background:var(--panel);font:11px/1 var(--font-mono);white-space:nowrap}.badge.ok{border-color:color-mix(in oklch,var(--success) 36%,var(--border));color:var(--success)}.badge.warn{border-color:color-mix(in oklch,var(--warn) 44%,var(--border));color:oklch(50% .120 78)}.badge.danger{border-color:color-mix(in oklch,var(--danger) 36%,var(--border));color:var(--danger)}
+    .spectrum-box{height:238px;position:relative;border:1px solid var(--border);background:linear-gradient(180deg,var(--surface),var(--bg));overflow:hidden;margin-bottom:12px}.spectrum-line{position:absolute;inset:18px 18px 42px}.spectrum-line svg{width:100%;height:100%}.peak-marker{position:absolute;bottom:42px;width:1px;background:var(--border-strong)}.peak-marker button{position:absolute;bottom:-28px;left:50%;transform:translateX(-50%);height:22px;border:1px solid var(--border);background:var(--surface);font:10px/1 var(--font-mono);padding:0 5px}.peak-marker.active{background:var(--accent)}.peak-marker.active button{border-color:var(--accent);color:var(--accent)}
+    .asset-frame{height:240px;border:1px solid var(--border);background:var(--bg);position:relative;overflow:hidden}.asset-frame:before{content:"";position:absolute;inset:28px 32px;background:repeating-linear-gradient(90deg,transparent 0 58px,color-mix(in oklch,var(--border) 60%,transparent) 58px 59px),repeating-linear-gradient(0deg,transparent 0 42px,color-mix(in oklch,var(--border) 60%,transparent) 42px 43px)}.region{position:absolute;border:2px solid var(--accent);background:color-mix(in oklch,var(--accent) 8%,transparent)}.region.r1{left:12%;top:25%;width:34%;height:30%}.region.r2{left:54%;top:36%;width:28%;height:38%}.pipeline{display:grid;gap:8px}.pipeline-step{display:grid;grid-template-columns:38px 1fr auto;gap:10px;align-items:center;border:1px solid var(--border);background:var(--bg);padding:10px}.pipeline-step b{font:600 12px/1 var(--font-mono)}
+    .footer{display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-top:1px solid var(--border);background:var(--panel);color:var(--muted);font:11px/1 var(--font-mono)}
+    .dialog{position:fixed;inset:0;background:color-mix(in oklch,var(--fg) 28%,transparent);display:none;place-items:center;z-index:20}.dialog.open{display:grid}.dialog-card{width:min(430px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 24px 80px color-mix(in oklch,var(--fg) 28%,transparent)}.dialog-card header{height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel)}.dialog-card h2{margin:0;font:600 14px/1 var(--font-display)}.dialog-card form{display:grid;gap:12px;padding:16px}.dialog-card label{display:grid;gap:6px;color:var(--muted);font-size:12px}.dialog-card input,.dialog-card select{height:34px;border:1px solid var(--border-strong);background:var(--bg);padding:0 9px}.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}.error{display:none;color:var(--danger);font-size:12px}.error.visible{display:block}.toast{position:fixed;right:20px;bottom:36px;transform:translateY(14px);opacity:0;pointer-events:none;background:var(--fg);color:oklch(96% .004 250);border:1px solid color-mix(in oklch,var(--surface) 18%,transparent);padding:10px 12px;font:12px/1.2 var(--font-mono);transition:.18s ease}.toast.visible{opacity:1;transform:translateY(0)}
+    @media (max-width:980px){body{overflow:auto}.app{min-height:100vh;grid-template-rows:auto auto minmax(0,1fr) auto}.banner{align-items:flex-start;flex-wrap:wrap;padding:14px}.banner-copy{order:3;flex-basis:100%;max-width:none}.tool-tabs{padding:0 14px}.tool-tab{min-width:154px}.frame-head{height:auto;min-height:58px;flex-wrap:wrap;padding:10px 14px}.frame-title{min-width:100%}.frame-body{padding:14px}.page-grid,.hero-card{grid-template-columns:1fr}.metric-row,.cards{grid-template-columns:1fr 1fr}.schema-card{min-height:180px}}
+    @media (max-width:560px){.brand{min-width:0}.brand h1{font-size:17px}.banner-actions{width:100%;margin-left:0;justify-content:space-between}.tool-tab{min-width:132px}.metric-row,.cards{grid-template-columns:1fr}.frame-actions{width:100%;margin-left:0}.status-chip{display:none}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="banner">
+      <div class="brand" aria-label="Spectra Corpus Toolset">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <h1 data-i18n="brandTitle">Spectra Corpus Toolset</h1>
+          <p data-i18n="brandSub">IR-IE v0.7 谱学语料库与工具集</p>
+        </div>
+      </div>
+      <p class="banner-copy" data-i18n="bannerCopy">面向材料科学家的谱学知识入口：顶部只保留账户与语言，工具切换集中在下方路由 tab，当前工具在 <strong>main_frame</strong> 中展开。</p>
+      <div class="banner-actions">
+        <div class="lang-switch" aria-label="Language switch">
+          <button type="button" data-lang="zh" class="active">中</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+        <button type="button" class="account-btn" id="loginOpen"><span class="avatar">U</span><span data-i18n="login">账户入口</span></button>
+      </div>
+    </header>
+    <nav class="tool-tabs" id="toolTabs" aria-label="Tool routes"></nav>
+    <main id="main_frame" aria-live="polite">
+      <div class="frame-head">
+        <div class="frame-title"><strong id="frameTitle">功能基团卡片</strong><span id="frameSub">GET /groups · FG_*.json</span></div>
+        <div class="frame-actions">
+          <span class="status-chip"><span class="status-dot"></span><span id="statusText">schema v0.7</span></span>
+        </div>
+      </div>
+      <section class="frame-body" id="frameBody"></section>
+    </main>
+    <footer class="footer"><span>IR-IE v0.7 · schema_validated_quality_audited_asset_localized</span><span id="routeFoot">GET /groups</span></footer>
+  </div>
+  <div class="dialog" id="loginDialog" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="dialog-card">
+      <header><h2 id="loginTitle" data-i18n="loginTitle">账户入口</h2><button type="button" class="ghost-btn" id="loginClose" aria-label="Close">×</button></header>
+      <form id="loginForm">
+        <label><span>Email</span><input id="email" type="email" placeholder="researcher@example.org" /></label>
+        <label><span>Role</span><select id="role"><option>Curator</option><option>Spectroscopist</option><option>Reviewer</option></select></label>
+        <p class="error" id="loginError" data-i18n="loginError">请填写有效邮箱并选择角色。</p>
+        <div class="dialog-actions"><button type="button" class="ghost-btn" id="loginCancel">Cancel</button><button type="submit" class="primary-btn">Enter</button></div>
+      </form>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+  <script>
+    const qs=(s,r=document)=>r.querySelector(s);
+    const qsa=(s,r=document)=>Array.from(r.querySelectorAll(s));
+    let language='zh';
+    let activeRoute='corpus';
+    let selectedKey='FG_CARBONYL';
+    let selectedPeak='PK_CARBONYL_1715';
+
+    const i18n={
+      zh:{
+        brandTitle:'Spectra Corpus Toolset',
+        brandSub:'IR-IE v0.7 谱学语料库与工具集',
+        bannerCopy:'面向材料科学家的谱学知识入口：顶部只保留账户与语言，工具切换集中在下方路由 tab，当前工具在 main_frame 中展开。',
+        login:'账户入口',
+        loginTitle:'账户入口',loginError:'请填写有效邮箱并选择角色。',entered:'账户状态已更新',noMatch:'没有匹配内容',noMatchHint:'调整搜索词后继续查看当前工具页面。'
+      },
+      en:{
+        brandTitle:'Spectra Corpus Toolset',
+        brandSub:'IR-IE v0.7 spectral corpus and tools',
+        bannerCopy:'A spectroscopy knowledge entry for materials scientists: account and language stay in the banner, tool routes sit in the tab row, and the active tool opens inside main_frame.',
+        login:'Account',
+        loginTitle:'Account',loginError:'Enter a valid email and role.',entered:'Account state updated',noMatch:'No matching content',noMatchHint:'Adjust the query to continue browsing this tool.'
+      }
+    };
+
+    const routes={
+      corpus:{
+        title:{zh:'功能基团卡片',en:'Functional Group Cards'},sub:'GET /groups · FG_*.json',endpoint:'GET /groups',
+        tab:{zh:'基团卡片',en:'Group Cards'},hint:{zh:'卡片目录',en:'card index'}
+      },
+      spectra:{
+        title:{zh:'谱图查看',en:'Spectrum Viewer'},sub:'GET /spectra/{spectrum_id} · peaks',endpoint:'GET /spectra/{spectrum_id}',
+        tab:{zh:'谱图查看',en:'Spectra'},hint:{zh:'峰位与归属',en:'peaks and assignments'}
+      },
+      figures:{
+        title:{zh:'图解构',en:'Figure Deconstruction'},sub:'GET /assets/spectra/{asset_name} · regions',endpoint:'GET /assets/spectra/{asset_name}',
+        tab:{zh:'图解构',en:'Figures'},hint:{zh:'图像区域',en:'image regions'}
+      },
+      evidence:{
+        title:{zh:'证据追踪',en:'Evidence Trace'},sub:'GET /evidence/{evidence_id} · claims',endpoint:'GET /evidence/{evidence_id}',
+        tab:{zh:'证据追踪',en:'Evidence'},hint:{zh:'来源与声明',en:'sources and claims'}
+      },
+      curation:{
+        title:{zh:'标注流转',en:'Curation Flow'},sub:'schema validation · quality audit',endpoint:'POST /curation/drafts',
+        tab:{zh:'标注流转',en:'Curation'},hint:{zh:'校验与复核',en:'validation and review'}
+      }
+    };
+
+    const stats=[
+      ['group_card_files','37','FG_*.json'],['evidence_spans','606','source grounding'],['spectra','97','compound spectra'],['peak_assignments','196','peak links']
+    ];
+    const groups=[
+      {id:'FG_CARBONYL',zh:'羰基',en:'Carbonyl',type:'functional_group_card',templates:28,evidence:52,spectra:14,status:'validated',api:'GET /groups/FG_CARBONYL'},
+      {id:'FG_HYDROXYL',zh:'羟基',en:'Hydroxyl',type:'functional_group_card',templates:23,evidence:44,spectra:11,status:'validated',api:'GET /groups/FG_HYDROXYL'},
+      {id:'FG_AMIDE',zh:'酰胺',en:'Amide',type:'functional_group_card',templates:21,evidence:39,spectra:9,status:'review',api:'GET /groups/FG_AMIDE'},
+      {id:'FG_SILICON',zh:'硅相关基团',en:'Silicon groups',type:'functional_group_card',templates:18,evidence:25,spectra:7,status:'localized',api:'GET /groups/FG_SILICON'},
+      {id:'FG_NITRILE',zh:'腈基',en:'Nitrile',type:'functional_group_card',templates:12,evidence:18,spectra:5,status:'validated',api:'GET /groups/FG_NITRILE'},
+      {id:'FG_AROMATIC_CH',zh:'芳香 C-H',en:'Aromatic C-H',type:'functional_group_card',templates:19,evidence:33,spectra:8,status:'validated',api:'GET /groups/FG_AROMATIC_CH'}
+    ];
+    const peaks=[
+      {id:'PK_CARBONYL_1715',peak:1715,assignment:'C=O stretching',evidence:'EV_FTIR_260_017',vibration:'VT_CARBONYL_STRETCH',state:'linked',confidence:'0.91'},
+      {id:'PK_HYDROXYL_3430',peak:3430,assignment:'O-H stretching',evidence:'EV_POLYMER_025_006',vibration:'VT_HYDROXYL_BROAD',state:'linked',confidence:'0.87'},
+      {id:'PK_AMIDE_1650',peak:1650,assignment:'Amide I band',evidence:'EV_LINVIEN_041_012',vibration:'VT_AMIDE_I',state:'review',confidence:'0.78'},
+      {id:'PK_SILOXANE_1080',peak:1080,assignment:'Si-O-Si asymmetric stretch',evidence:'EV_FTIR_260_089',vibration:'VT_SILOXANE_ASYM',state:'draft',confidence:'0.64'}
+    ];
+    const figureRegions=[
+      {id:'REG_001',label:'spectrum curve region',asset:'assets/spectra/FG_CARBONYL_figure_014.png',source:'evidence_spans[].image_path',state:'localized'},
+      {id:'REG_002',label:'peak annotation labels',asset:'assets/spectra/FG_CARBONYL_figure_014.png',source:'spectral_gallery[].annotated_peaks',state:'review'},
+      {id:'REG_003',label:'caption and printed page',asset:'assets/spectra/FG_CARBONYL_figure_014.png',source:'evidence_spans[].bbox',state:'linked'}
+    ];
+    const evidenceRows=[
+      {id:'EV_FTIR_260_017',book:'傅里叶变换红外光谱分析 第3版',field:'evidence_spans[].text',links:'peak_assignment, source_claim',state:'linked'},
+      {id:'EV_SYSTEMATIC_098_031',book:'Infrared Spectral Interpretation',field:'source_claims[].evidence_ids',links:'vibration_template',state:'linked'},
+      {id:'EV_TABLES_096_044',book:'Characteristic Group Frequencies',field:'relations[].evidence_ids',links:'relation, group',state:'review'},
+      {id:'EV_STRUCTURE_086_009',book:'有机分子结构波谱解析',field:'compound_examples[].evidence_ids',links:'compound, spectrum',state:'linked'}
+    ];
+    const curationSteps=[
+      ['01','Import FG_*.json','Keep JSON as canonical v0.7 import artifact','done'],
+      ['02','Normalize entities','functional_group_cards → spectra → peaks → peak_assignments','active'],
+      ['03','Join evidence links','store evidence/claim/assignment relations as join tables','active'],
+      ['04','Serve assets','resolve assets/spectra paths relative to knowledge root','queued']
+    ];
+
+    function t(key){return i18n[language][key]||key}
+    function local(value){return typeof value==='object'?value[language]:value}
+    function statusClass(value){return value==='validated'||value==='localized'||value==='linked'||value==='done'?'ok':value==='review'||value==='active'?'warn':'danger'}
+    function setLanguage(next){
+      language=next;
+      document.documentElement.lang=next==='zh'?'zh-CN':'en';
+      qsa('[data-lang]').forEach(btn=>btn.classList.toggle('active',btn.dataset.lang===next));
+      qsa('[data-i18n]').forEach(node=>{node.textContent=t(node.dataset.i18n)});
+      qsa('[data-i18n-placeholder]').forEach(node=>{node.placeholder=t(node.dataset.i18nPlaceholder)});
+      renderTabs();
+      renderPage('');
+    }
+    function renderTabs(){
+      qs('#toolTabs').innerHTML=Object.entries(routes).map(([id,route])=>`<button type="button" class="tool-tab ${id===activeRoute?'active':''}" data-route="${id}"><span>${local(route.tab)}</span><span>${local(route.hint)}</span></button>`).join('');
+      qsa('[data-route]').forEach(btn=>btn.onclick=()=>switchRoute(btn.dataset.route));
+    }
+    function switchRoute(id){
+      activeRoute=id;
+      renderTabs();
+      renderPage('');
+    }
+    function renderPage(filter=''){
+      const route=routes[activeRoute];
+      qs('#frameTitle').textContent=local(route.title);
+      qs('#frameSub').textContent=route.sub;
+      qs('#routeFoot').textContent=route.endpoint;
+      qs('#statusText').textContent=activeRoute==='corpus'?'schema v0.7':route.endpoint;
+      const renderers={corpus:renderCorpus,spectra:renderSpectra,figures:renderFigures,evidence:renderEvidence,curation:renderCuration};
+      renderers[activeRoute](filter.trim().toLowerCase());
+    }
+    function emptyState(){return `<div class="detail-list"><article><p><strong>${t('noMatch')}</strong><br>${t('noMatchHint')}</p></article></div>`}
+    function renderCorpus(filter){
+      const visible=groups.filter(row=>Object.values(row).join(' ').toLowerCase().includes(filter));
+      const selected=groups.find(row=>row.id===selectedKey)||groups[0];
+      qs('#frameBody').innerHTML=`<div class="page-grid"><section class="panel hero-card"><div class="hero-copy"><h2>${language==='zh'?'以 FG_*.json 为入口的谱学知识层':'Schema-native group cards as the knowledge entry'}</h2><p>${language==='zh'?'当前后端数据模式把每个功能/基础基团组织为一张卡片，卡片内部连接证据片段、振动模板、化合物实例、谱图、峰位、峰归属、来源声明和关系。':'The backend model organizes each functional or basic group as one card linking evidence spans, vibration templates, compound examples, spectra, peaks, assignments, source claims, and relations.'}</p><div class="metric-row">${stats.map(item=>`<div class="metric"><strong>${item[1]}</strong><span>${item[0]}</span></div>`).join('')}</div></div><aside class="schema-card"><small>schema contract</small><code>schema_version: 0.7-native-superset\nknowledge_dir: knowledge/basic_groups_v07_20260619\nasset_dir: assets/spectra\nstatus: quality_audited</code><button type="button" class="primary-btn" id="openSelected">${language==='zh'?'查看选中卡片':'Open selected card'}</button></aside></section><section class="panel"><div class="panel-head"><h2>${language==='zh'?'卡片索引':'Card index'}</h2><small>${visible.length} / ${groups.length}</small></div><div class="panel-body"><div class="cards">${visible.length?visible.map(row=>groupCard(row)).join(''):emptyState()}</div></div></section><aside class="panel"><div class="panel-head"><h2>${language==='zh'?'字段映射':'Field mapping'}</h2><small>${selected.id}</small></div><div class="panel-body detail-list"><article><header><span>root</span><span>${selected.type}</span></header><p><strong>${language==='zh'?selected.zh:selected.en}</strong><br>group_id, name_zh, name_en, parent_group_id, smarts, quality, extraction_metadata</p></article><article><header><span>nested arrays</span><span>normalized later</span></header><p>evidence_spans, vibration_templates, compound_examples, source_claims, relations, spectral_gallery</p></article><article><header><span>recommended api</span><span>${selected.status}</span></header><p>${selected.api}</p></article></div></aside></div>`;
+      qsa('[data-group]').forEach(card=>card.onclick=()=>{selectedKey=card.dataset.group;renderCorpus(filter)});
+      qs('#openSelected').onclick=()=>switchRoute('spectra');
+    }
+    function groupCard(row){
+      return `<article class="module-card ${row.id===selectedKey?'selected':''}" data-group="${row.id}" tabindex="0"><div><h3>${language==='zh'?row.zh:row.en}</h3><p>${row.id} · ${row.templates} vibration templates · ${row.evidence} evidence spans</p></div><footer><span>${row.spectra} spectra</span><span class="badge ${statusClass(row.status)}">${row.status}</span></footer></article>`;
+    }
+    function renderSpectra(filter){
+      const visible=peaks.filter(row=>Object.values(row).join(' ').toLowerCase().includes(filter));
+      const selected=peaks.find(row=>row.id===selectedPeak)||peaks[0];
+      qs('#frameBody').innerHTML=`<div class="page-grid"><section class="panel"><div class="panel-head"><h2>${language==='zh'?'峰位与归属':'Peaks and assignments'}</h2><small>spectra → peaks → assignments</small></div><div class="panel-body"><div class="spectrum-box"><div class="spectrum-line" aria-hidden="true"><svg viewBox="0 0 760 210" preserveAspectRatio="none"><path d="M0,35 C68,38 110,45 148,54 C188,66 214,168 241,78 C272,15 304,92 338,84 C386,73 406,168 438,99 C471,41 492,70 526,83 C576,103 601,162 629,104 C653,58 688,70 760,62" fill="none" stroke="var(--fg)" stroke-width="2" /></svg></div>${peaks.map((row,index)=>`<div class="peak-marker ${row.id===selectedPeak?'active':''}" style="left:${20+index*18}%;height:${132-index*17}px"><button type="button" data-peak="${row.id}">${row.peak}</button></div>`).join('')}</div><div class="table-wrap"><table class="table"><thead><tr><th>cm-1</th><th>assignment</th><th>evidence_id</th><th>state</th></tr></thead><tbody>${visible.length?visible.map(row=>`<tr class="${row.id===selectedPeak?'active':''}" data-peak="${row.id}"><td>${row.peak}</td><td>${row.assignment}</td><td>${row.evidence}</td><td><span class="badge ${statusClass(row.state)}">${row.state}</span></td></tr>`).join(''):`<tr><td colspan="4">${t('noMatch')}</td></tr>`}</tbody></table></div></div></section><aside class="panel"><div class="panel-head"><h2>${language==='zh'?'归属详情':'Assignment detail'}</h2><small>${selected.evidence}</small></div><div class="panel-body detail-list"><article><header><span>peak_id</span><span>${selected.confidence}</span></header><p><strong>${selected.peak} cm-1</strong> · ${selected.assignment}</p></article><article><header><span>foreign keys</span><span>${selected.state}</span></header><p>peak_id → peaks · occurrence_id → substructure_occurrences · vibration_id → vibration_templates · evidence_ids → evidence_spans</p></article></div></aside></div>`;
+      qsa('[data-peak]').forEach(node=>node.onclick=()=>{selectedPeak=node.dataset.peak;renderSpectra('')});
+    }
+    function renderFigures(filter){
+      const visible=figureRegions.filter(row=>Object.values(row).join(' ').toLowerCase().includes(filter));
+      qs('#frameBody').innerHTML=`<div class="page-grid"><section class="panel"><div class="panel-head"><h2>${language==='zh'?'图像资源与区域':'Image assets and regions'}</h2><small>130 assets · 0 missing refs</small></div><div class="panel-body"><div class="asset-frame" aria-label="figure region preview"><span class="region r1"></span><span class="region r2"></span></div><div class="table-wrap" style="margin-top:12px"><table class="table"><thead><tr><th>region</th><th>asset</th><th>source field</th><th>state</th></tr></thead><tbody>${visible.length?visible.map(row=>`<tr><td>${row.id}</td><td>${row.asset}</td><td>${row.source}</td><td><span class="badge ${statusClass(row.state)}">${row.state}</span></td></tr>`).join(''):`<tr><td colspan="4">${t('noMatch')}</td></tr>`}</tbody></table></div></div></section><aside class="panel"><div class="panel-head"><h2>${language==='zh'?'后端约束':'Backend contract'}</h2><small>asset path</small></div><div class="panel-body detail-list"><article><header><span>portable path</span><span>required</span></header><p>evidence_spans[].image_path / spectra[].image_path / spectral_gallery[].mineru_crop_image_path → assets/spectra/*</p></article><article><header><span>serve</span><span>recommended</span></header><p>GET /assets/spectra/{asset_name}</p></article><article><header><span>current count</span><span>localized</span></header><p>195 image references, 130 unique image assets, 0 missing asset refs.</p></article></div></aside></div>`;
+    }
+    function renderEvidence(filter){
+      const visible=evidenceRows.filter(row=>Object.values(row).join(' ').toLowerCase().includes(filter));
+      qs('#frameBody').innerHTML=`<div class="page-grid"><section class="panel"><div class="panel-head"><h2>${language==='zh'?'证据到声明的链路':'Evidence-to-claim links'}</h2><small>606 evidence spans</small></div><div class="panel-body"><div class="table-wrap"><table class="table"><thead><tr><th>evidence_id</th><th>source</th><th>schema path</th><th>links</th><th>state</th></tr></thead><tbody>${visible.length?visible.map(row=>`<tr data-evidence="${row.id}"><td>${row.id}</td><td>${row.book}</td><td>${row.field}</td><td>${row.links}</td><td><span class="badge ${statusClass(row.state)}">${row.state}</span></td></tr>`).join(''):`<tr><td colspan="5">${t('noMatch')}</td></tr>`}</tbody></table></div></div></section><aside class="panel"><div class="panel-head"><h2>${language==='zh'?'关系约束':'Relation rules'}</h2><small>join tables</small></div><div class="panel-body detail-list"><article><header><span>principle</span><span>v0.7</span></header><p>${language==='zh'?'证据、声明、峰归属之间的连接应进入 join table，避免只用反规范化字符串保存。':'Evidence, claims, and assignments should be stored through join tables rather than denormalized strings only.'}</p></article><article><header><span>read api</span><span>priority</span></header><p>GET /evidence/{evidence_id}</p></article></div></aside></div>`;
+    }
+    function renderCuration(filter){
+      const visible=curationSteps.filter(row=>row.join(' ').toLowerCase().includes(filter));
+      qs('#frameBody').innerHTML=`<div class="page-grid"><section class="panel"><div class="panel-head"><h2>${language==='zh'?'导入与复核流':'Import and review flow'}</h2><small>schema validation</small></div><div class="panel-body"><div class="pipeline">${visible.length?visible.map(step=>`<div class="pipeline-step"><b>${step[0]}</b><div><strong>${step[1]}</strong><p>${step[2]}</p></div><span class="badge ${statusClass(step[3])}">${step[3]}</span></div>`).join(''):emptyState()}</div></div></section><aside class="panel"><div class="panel-head"><h2>${language==='zh'?'建议优先读接口':'Priority read APIs'}</h2><small>backend</small></div><div class="panel-body detail-list"><article><header><span>groups</span><span>list/detail</span></header><p>GET /groups · GET /groups/{group_id}</p></article><article><header><span>compounds</span><span>normalized</span></header><p>GET /compounds · GET /compounds/{compound_id}/spectra</p></article><article><header><span>spectra/evidence</span><span>traceable</span></header><p>GET /spectra/{spectrum_id} · GET /evidence/{evidence_id}</p></article></div></aside></div>`;
+    }
+    function toast(message){const node=qs('#toast');node.textContent=message;node.classList.add('visible');clearTimeout(window.__toastTimer);window.__toastTimer=setTimeout(()=>node.classList.remove('visible'),1800)}
+    function openLogin(){qs('#loginDialog').classList.add('open');qs('#email').focus()}
+    function closeLogin(){qs('#loginDialog').classList.remove('open');qs('#loginError').classList.remove('visible')}
+
+    qsa('[data-lang]').forEach(btn=>btn.onclick=()=>setLanguage(btn.dataset.lang));
+    qs('#loginOpen').onclick=openLogin;
+    qs('#loginClose').onclick=closeLogin;
+    qs('#loginCancel').onclick=closeLogin;
+    qs('#loginDialog').onclick=event=>{if(event.target.id==='loginDialog')closeLogin()};
+    qs('#loginForm').onsubmit=event=>{
+      event.preventDefault();
+      const email=qs('#email').value.trim();
+      const role=qs('#role').value.trim();
+      if(!email.includes('@')||!role){qs('#loginError').classList.add('visible');return}
+      qs('#loginError').classList.remove('visible');
+      qs('#loginOpen span:last-child').textContent=role;
+      qs('.avatar').textContent=role.slice(0,1).toUpperCase();
+      closeLogin();
+      toast(t('entered'));
+    };
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape') closeLogin();
+    });
+    setLanguage('zh');
+  </script>
+</body>
+</html>
