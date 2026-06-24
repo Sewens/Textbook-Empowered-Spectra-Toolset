@@ -220,3 +220,4 @@ __marimo__/
 /docs/dev_docs
 /od-prototype/.od-skills
 *.lock
+/frontend/node_modules
