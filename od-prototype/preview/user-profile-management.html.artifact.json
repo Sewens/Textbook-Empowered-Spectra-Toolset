@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "kind": "html",
+  "title": "preview/user-profile-management.html",
+  "entry": "preview/user-profile-management.html",
+  "renderer": "html",
+  "status": "complete",
+  "exports": [
+    "html",
+    "pdf",
+    "zip"
+  ],
+  "createdAt": "2026-06-24T07:43:22.617Z",
+  "updatedAt": "2026-06-24T07:43:22.617Z",
+  "metadata": {
+    "inferred": true,
+    "reconciled": true
+  }
+}

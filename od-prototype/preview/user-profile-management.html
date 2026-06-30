@@ -1,0 +1,387 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>用户个人信息管理 · Spectra Corpus Toolset</title>
+<style>
+:root{
+  --bg:oklch(97.8% .004 250);
+  --surface:oklch(100% 0 0);
+  --panel:oklch(95.5% .006 250);
+  --panel-2:oklch(98.7% .002 250);
+  --fg:oklch(23% .010 250);
+  --muted:oklch(50% .012 250);
+  --meta:oklch(62% .010 250);
+  --border:oklch(88% .006 250);
+  --border-strong:oklch(73% .010 250);
+  --accent:#1976d2;
+  --accent-soft:#e3f2fd;
+  --success:#2e7d32;
+  --success-soft:#e8f5e9;
+  --warn:#a56600;
+  --warn-soft:#fff4d8;
+  --danger:#c62828;
+  --danger-soft:#ffebee;
+  --font-display:'Segoe UI Variable Display','Aptos Display','Segoe UI',system-ui,sans-serif;
+  --font-body:'Segoe UI Variable Text','Aptos','Segoe UI','Microsoft YaHei',system-ui,sans-serif;
+  --font-mono:'Cascadia Mono','JetBrains Mono',ui-monospace,Menlo,monospace;
+  --radius:2px;
+}
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{margin:0;background:var(--surface);color:var(--fg);font:14px/1.5 var(--font-body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.user-frame{height:100vh;min-height:680px;display:grid;grid-template-rows:minmax(0,1fr);background:var(--surface)}
+.frame-body{min-height:0;overflow:auto;padding:18px;background:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px),var(--surface);background-size:32px 32px}
+.settings-shell{min-height:100%;display:grid;grid-template-columns:248px minmax(0,1fr);border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 1px 0 color-mix(in oklch,var(--fg) 6%,transparent)}
+.settings-sidebar{border-right:1px solid var(--border);background:var(--panel-2);display:grid;grid-template-rows:auto minmax(0,1fr) auto;min-width:0}
+.account-card{padding:16px 14px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:42px minmax(0,1fr);gap:10px;align-items:center;background:var(--surface)}
+.avatar{width:42px;height:42px;border:1px solid var(--border-strong);background:var(--panel);display:grid;place-items:center;font:700 15px/1 var(--font-display);letter-spacing:.02em;color:var(--fg)}
+.account-card b{display:block;font:600 13px/1.2 var(--font-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.account-card small{display:block;margin-top:4px;color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-list{padding:10px 8px;overflow:auto}.nav-list button{width:100%;min-height:38px;display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:8px;border:1px solid transparent;background:transparent;padding:7px 9px;text-align:left;color:var(--fg);border-radius:var(--radius)}
+.nav-list button:hover{background:var(--surface);border-color:var(--border)}.nav-list button.active{background:var(--surface);border-color:var(--border-strong);box-shadow:inset 3px 0 0 var(--accent)}.nav-list button svg{width:17px;height:17px;color:var(--muted)}.nav-list button.active svg{color:var(--accent)}.nav-list span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nav-list em{width:7px;height:7px;border-radius:50%;background:var(--warn);opacity:0}.nav-list button.dirty em{opacity:1}
+.sidebar-foot{padding:10px 12px;border-top:1px solid var(--border);color:var(--muted);font:11px/1.45 var(--font-mono)}
+.settings-main{min-width:0;display:grid;grid-template-rows:auto minmax(0,1fr);background:var(--surface)}
+.section-header{min-height:74px;display:flex;align-items:center;gap:16px;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
+.section-header h1{margin:0;font:600 22px/1.15 var(--font-display);letter-spacing:-.02em}.section-header p{margin:5px 0 0;color:var(--muted);font-size:12px}.header-status{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}.status-pill{display:inline-flex;align-items:center;min-height:24px;padding:3px 8px;border:1px solid var(--border);background:var(--panel-2);color:var(--muted);font:600 11px/1 var(--font-mono)}.status-pill.dirty{background:var(--warn-soft);border-color:color-mix(in oklch,var(--warn) 22%,var(--border));color:var(--warn)}.status-pill.saved{background:var(--success-soft);border-color:color-mix(in oklch,var(--success) 20%,var(--border));color:var(--success)}
+.settings-content{min-height:0;overflow:auto;padding:20px;display:grid;gap:16px;align-content:start;background:var(--surface)}
+.settings-section{display:none;gap:16px}.settings-section.active{display:grid}.card{border:1px solid var(--border-strong);background:var(--surface);min-width:0}.card-head{min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--panel-2)}.card-head h2{margin:0;font:600 14px/1.2 var(--font-display)}.card-head small{color:var(--muted);font:11px/1 var(--font-mono)}.card-body{padding:14px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font:600 11px/1.2 var(--font-mono);letter-spacing:.03em;color:var(--muted);text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid var(--border-strong);background:var(--surface);border-radius:var(--radius);min-height:34px;padding:7px 9px}.field textarea{min-height:86px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in oklch,var(--accent) 18%,transparent);outline:0}.field .hint{color:var(--muted);font-size:12px}.field .error{display:none;color:var(--danger);font-size:12px}.field.invalid input,.field.invalid select,.field.invalid textarea{border-color:var(--danger)}.field.invalid .error{display:block}
+.row-list{display:grid}.setting-row{min-height:58px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)}.setting-row:last-child{border-bottom:0}.setting-row b{display:block;font:600 13px/1.2 var(--font-display)}.setting-row p{margin:5px 0 0;color:var(--muted);font-size:12px;max-width:62ch}.select-compact{min-width:160px;border:1px solid var(--border-strong);background:var(--surface);min-height:32px;padding:5px 8px;border-radius:var(--radius)}
+.switch{position:relative;width:42px;height:24px;display:inline-block}.switch input{position:absolute;opacity:0;pointer-events:none}.switch span{position:absolute;inset:0;border-radius:999px;background:var(--border-strong);transition:background .16s ease}.switch span:before{content:"";position:absolute;width:20px;height:20px;left:2px;top:2px;background:var(--surface);border:1px solid var(--border);border-radius:50%;transition:transform .16s ease}.switch input:checked + span{background:var(--accent)}.switch input:checked + span:before{transform:translateX(18px)}
+.btn-row{display:flex;justify-content:flex-end;gap:8px;padding-top:12px;border-top:1px solid var(--border);margin-top:14px}.btn{min-height:32px;border:1px solid var(--border-strong);background:var(--surface);padding:6px 12px;border-radius:var(--radius);font-weight:600}.btn:hover{background:var(--panel-2)}.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}.btn.primary:hover{background:color-mix(in oklch,var(--accent) 85%,var(--fg))}.btn.danger{color:var(--danger);border-color:color-mix(in oklch,var(--danger) 28%,var(--border))}.btn[disabled]{opacity:.55;cursor:not-allowed}
+.two-col{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}.profile-summary{display:grid;gap:12px}.summary-line{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}.summary-line:last-child{border-bottom:0}.summary-line span{color:var(--muted);font-size:12px}.summary-line b{font:600 12px/1.2 var(--font-mono)}.token-box{border:1px solid var(--border);background:var(--panel-2);padding:10px;font:12px/1.55 var(--font-mono);word-break:break-all;color:var(--muted)}
+.session-table{width:100%;border-collapse:collapse;font-size:13px}.session-table th,.session-table td{padding:10px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle}.session-table th{color:var(--muted);font:600 11px/1 var(--font-mono);letter-spacing:.03em;text-transform:uppercase;background:var(--panel-2)}.session-table td:last-child{text-align:right}.tag{display:inline-flex;align-items:center;min-height:22px;padding:3px 7px;border:1px solid var(--border);background:var(--panel-2);color:var(--muted);font:600 11px/1 var(--font-mono)}.tag.green{background:var(--success-soft);color:var(--success);border-color:color-mix(in oklch,var(--success) 18%,var(--border))}.tag.red{background:var(--danger-soft);color:var(--danger);border-color:color-mix(in oklch,var(--danger) 18%,var(--border))}
+.notice{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;border:1px solid var(--border);background:var(--panel-2);padding:10px 12px;color:var(--muted);font-size:12px}.notice strong{color:var(--fg)}.notice svg{width:17px;height:17px;color:var(--accent);margin-top:1px}.danger-zone{border-color:color-mix(in oklch,var(--danger) 28%,var(--border-strong))}.danger-zone .card-head{background:var(--danger-soft)}
+.toast{position:fixed;right:22px;bottom:22px;z-index:10;min-width:260px;max-width:min(420px,calc(100vw - 44px));border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 10px 32px color-mix(in oklch,var(--fg) 16%,transparent);padding:12px 14px;display:none}.toast.show{display:block;animation:toast-in .18s ease}.toast b{display:block;font:600 13px/1.2 var(--font-display)}.toast span{display:block;margin-top:4px;color:var(--muted);font-size:12px}@keyframes toast-in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+.state-panel{display:none;border:1px solid var(--border-strong);background:var(--surface);padding:28px;max-width:680px}.state-panel h2{margin:0 0 8px;font:600 18px/1.2 var(--font-display)}.state-panel p{margin:0;color:var(--muted)}
+@media (max-width:980px){.user-frame{height:auto;min-height:100vh}.settings-shell{grid-template-columns:1fr}.settings-sidebar{border-right:0;border-bottom:1px solid var(--border);grid-template-rows:auto auto}.nav-list{display:flex;gap:6px;overflow:auto;padding:8px}.nav-list button{min-width:max-content}.sidebar-foot{display:none}.two-col{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.section-header{align-items:flex-start;flex-direction:column}.header-status{justify-content:flex-start}.frame-body{padding:12px}}
+@media (max-width:560px){.settings-content{padding:12px}.account-card{grid-template-columns:36px minmax(0,1fr)}.avatar{width:36px;height:36px}.card-head{align-items:flex-start;flex-direction:column}.setting-row{grid-template-columns:1fr}.btn-row{justify-content:stretch;flex-direction:column}.btn{width:100%}.session-table{display:block;overflow-x:auto;white-space:nowrap}}
+</style>
+</head>
+<body>
+<div class="user-frame" data-state="populated">
+  <main class="frame-body" id="content">
+    <div class="settings-shell" aria-label="用户个人信息管理组件">
+      <aside class="settings-sidebar" aria-label="账户设置导航">
+        <div class="account-card">
+          <div class="avatar" aria-hidden="true">DB</div>
+          <div>
+            <b>Debian Law</b>
+            <small>debian.law@example.org</small>
+          </div>
+        </div>
+        <nav class="nav-list" id="settingsNav" aria-label="设置分类">
+          <button type="button" class="active" data-target="profile" aria-current="page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.7-4 14.3-4 16 0"/></svg>
+            <span>个人资料</span><em aria-label="未保存"></em>
+          </button>
+          <button type="button" data-target="login">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><rect x="5" y="11" width="14" height="10" rx="2"/></svg>
+            <span>登录与密码</span><em aria-label="未保存"></em>
+          </button>
+          <button type="button" data-target="security">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l7 3v5c0 4.5-2.9 8.5-7 10-4.1-1.5-7-5.5-7-10V6l7-3z"/><path d="M9 12l2 2 4-5"/></svg>
+            <span>安全与会话</span><em aria-label="未保存"></em>
+          </button>
+          <button type="button" data-target="notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+            <span>通知偏好</span><em aria-label="未保存"></em>
+          </button>
+          <button type="button" data-target="data">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg>
+            <span>数据与偏好</span><em aria-label="未保存"></em>
+          </button>
+        </nav>
+        <div class="sidebar-foot">
+          <div>schema: user.profile.v1</div>
+          <div>last sync: 2026-06-24 15:42</div>
+        </div>
+      </aside>
+
+      <section class="settings-main" aria-live="polite">
+        <div class="section-header">
+          <div>
+            <h1 id="sectionTitle">个人资料</h1>
+            <p id="sectionDesc">维护用于谱学知识平台显示、通知和审计记录的基本身份信息。</p>
+          </div>
+          <div class="header-status">
+            <span class="status-pill saved" id="saveState">已保存</span>
+            <span class="status-pill">可独立保存</span>
+          </div>
+        </div>
+
+        <div class="settings-content">
+          <div class="state-panel" id="statePanel" role="status">
+            <h2>当前状态不可编辑</h2>
+            <p>后端 RBAC 或网络状态会在这里阻断保存动作；前端只展示交互反馈，不作为安全边界。</p>
+          </div>
+
+          <form class="settings-section active" id="profile" data-title="个人资料" data-desc="维护用于谱学知识平台显示、通知和审计记录的基本身份信息。" novalidate>
+            <div class="two-col">
+              <div class="card">
+                <div class="card-head"><h2>基础信息</h2><small>profile.identity</small></div>
+                <div class="card-body">
+                  <div class="form-grid">
+                    <div class="field" data-required>
+                      <label for="displayName">显示名称</label>
+                      <input id="displayName" name="displayName" value="Debian Law" autocomplete="name" />
+                      <span class="error">请输入显示名称。</span>
+                    </div>
+                    <div class="field" data-required>
+                      <label for="email">邮箱</label>
+                      <input id="email" name="email" value="debian.law@example.org" type="email" autocomplete="email" />
+                      <span class="error">请输入有效邮箱。</span>
+                    </div>
+                    <div class="field">
+                      <label for="institution">机构 / 团队</label>
+                      <input id="institution" name="institution" value="AI4S Spectra Lab" />
+                    </div>
+                    <div class="field">
+                      <label for="roleTitle">职能</label>
+                      <select id="roleTitle" name="roleTitle">
+                        <option>数据管理员</option>
+                        <option>谱图标注员</option>
+                        <option>研究者</option>
+                        <option>网站管理员</option>
+                      </select>
+                    </div>
+                    <div class="field full">
+                      <label for="bio">个人说明</label>
+                      <textarea id="bio" name="bio">负责红外 / 拉曼谱图数据入库、证据追踪与功能基团标注复核。</textarea>
+                      <span class="hint">该说明会出现在协作审计、标注分配和团队成员列表中。</span>
+                    </div>
+                  </div>
+                  <div class="btn-row">
+                    <button class="btn" type="reset">还原本节</button>
+                    <button class="btn primary" type="submit">保存个人资料</button>
+                  </div>
+                </div>
+              </div>
+              <aside class="card">
+                <div class="card-head"><h2>账户摘要</h2><small>readonly</small></div>
+                <div class="card-body profile-summary">
+                  <div class="summary-line"><span>用户 ID</span><b>usr_7F29A</b></div>
+                  <div class="summary-line"><span>当前角色</span><b>data_admin</b></div>
+                  <div class="summary-line"><span>所属租户</span><b>spectra-main</b></div>
+                  <div class="summary-line"><span>Schema 版本</span><b>2026.06</b></div>
+                  <div class="notice">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+                    <div><strong>只读字段来自后端会话。</strong><br>角色与租户不可在个人资料页直接修改。</div>
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </form>
+
+          <form class="settings-section" id="login" data-title="登录与密码" data-desc="管理登录邮箱、密码更新和备用验证方式；每组凭据独立保存。" novalidate>
+            <div class="card">
+              <div class="card-head"><h2>密码更新</h2><small>auth.password</small></div>
+              <div class="card-body">
+                <div class="form-grid">
+                  <div class="field" data-required><label for="oldPassword">当前密码</label><input id="oldPassword" name="oldPassword" type="password" autocomplete="current-password" /><span class="error">请输入当前密码。</span></div>
+                  <div class="field" data-required><label for="newPassword">新密码</label><input id="newPassword" name="newPassword" type="password" autocomplete="new-password" /><span class="error">新密码至少 8 位。</span></div>
+                  <div class="field full"><label for="backupEmail">备用邮箱</label><input id="backupEmail" name="backupEmail" type="email" value="backup@example.org" /><span class="hint">用于密码找回，不影响主登录邮箱。</span></div>
+                </div>
+                <div class="btn-row"><button class="btn" type="reset">还原本节</button><button class="btn primary" type="submit">保存登录设置</button></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>登录策略</h2><small>auth.policy</small></div>
+              <div class="card-body row-list">
+                <div class="setting-row"><div><b>保持登录</b><p>在可信设备上保留会话，浏览器关闭后不立即退出。</p></div><label class="switch"><input type="checkbox" name="keepSignedIn" checked /><span></span></label></div>
+                <div class="setting-row"><div><b>异常登录提醒</b><p>当检测到新地区、新设备或高风险 IP 登录时发送邮件通知。</p></div><label class="switch"><input type="checkbox" name="loginAlert" checked /><span></span></label></div>
+              </div>
+            </div>
+          </form>
+
+          <form class="settings-section" id="security" data-title="安全与会话" data-desc="查看当前设备会话，管理二次验证与访问令牌。" novalidate>
+            <div class="card">
+              <div class="card-head"><h2>二次验证</h2><small>security.mfa</small></div>
+              <div class="card-body row-list">
+                <div class="setting-row"><div><b>时间型验证码</b><p>使用认证器应用生成一次性验证码。</p></div><span class="tag green">已启用</span></div>
+                <div class="setting-row"><div><b>恢复代码</b><p>保存一次性恢复代码，用于无法访问认证器时登录。</p></div><button class="btn" type="button" data-action="codes">查看代码</button></div>
+                <div class="setting-row"><div><b>高风险操作复验</b><p>导出数据、删除令牌、变更邮箱前要求重新验证。</p></div><label class="switch"><input type="checkbox" name="stepup" checked /><span></span></label></div>
+              </div>
+              <div class="card-body" style="border-top:1px solid var(--border)">
+                <div class="btn-row" style="margin-top:0;border-top:0;padding-top:0"><button class="btn primary" type="submit">保存安全设置</button></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-head"><h2>活跃会话</h2><small>sessions</small></div>
+              <div class="card-body" style="padding:0">
+                <table class="session-table" aria-label="活跃会话列表">
+                  <thead><tr><th>设备</th><th>位置</th><th>最近活动</th><th>状态</th><th></th></tr></thead>
+                  <tbody>
+                    <tr><td>Windows · Edge</td><td>Shanghai</td><td>刚刚</td><td><span class="tag green">当前</span></td><td><button class="btn" type="button" disabled>保留</button></td></tr>
+                    <tr><td>macOS · Safari</td><td>Hangzhou</td><td>2 小时前</td><td><span class="tag">可信</span></td><td><button class="btn danger" type="button" data-action="revoke">退出</button></td></tr>
+                    <tr><td>Linux · Firefox</td><td>Beijing</td><td>昨天</td><td><span class="tag">标注节点</span></td><td><button class="btn danger" type="button" data-action="revoke">退出</button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </form>
+
+          <form class="settings-section" id="notifications" data-title="通知偏好" data-desc="配置标注、复核、导入任务和系统安全事件的通知方式。" novalidate>
+            <div class="card">
+              <div class="card-head"><h2>工作流通知</h2><small>notification.workflow</small></div>
+              <div class="card-body row-list">
+                <div class="setting-row"><div><b>标注任务分配</b><p>当新的 spectrum / peak assignment 复核任务分配给你时通知。</p></div><select class="select-compact" name="taskNotify"><option>站内 + 邮件</option><option>仅站内</option><option>关闭</option></select></div>
+                <div class="setting-row"><div><b>导入任务完成</b><p>raw_data 派生导入、schema validation 或 evidence join 完成后通知。</p></div><select class="select-compact" name="importNotify"><option>站内</option><option>站内 + 邮件</option><option>关闭</option></select></div>
+                <div class="setting-row"><div><b>安全事件</b><p>登录异常、MFA 变更和令牌撤销必须保留邮件通知。</p></div><span class="tag green">强制开启</span></div>
+              </div>
+              <div class="card-body" style="border-top:1px solid var(--border)"><div class="btn-row" style="margin-top:0;border-top:0;padding-top:0"><button class="btn" type="reset">还原本节</button><button class="btn primary" type="submit">保存通知偏好</button></div></div>
+            </div>
+          </form>
+
+          <form class="settings-section" id="data" data-title="数据与偏好" data-desc="设置默认数据视图、导出格式与个人令牌；不会改变全站 schema。" novalidate>
+            <div class="card">
+              <div class="card-head"><h2>默认数据视图</h2><small>preferences.data</small></div>
+              <div class="card-body">
+                <div class="form-grid">
+                  <div class="field"><label for="defaultRoute">默认工具页</label><select id="defaultRoute" name="defaultRoute"><option>功能基团卡片</option><option>谱图查看</option><option>证据追踪</option><option>标注流转</option></select></div>
+                  <div class="field"><label for="density">信息密度</label><select id="density" name="density"><option>紧凑</option><option>标准</option><option>宽松</option></select></div>
+                  <div class="field"><label for="exportFormat">默认导出格式</label><select id="exportFormat" name="exportFormat"><option>JSONL</option><option>CSV</option><option>Parquet</option></select></div>
+                  <div class="field"><label for="locale">界面语言</label><select id="locale" name="locale"><option>简体中文</option><option>English</option></select></div>
+                </div>
+                <div class="btn-row"><button class="btn" type="reset">还原本节</button><button class="btn primary" type="submit">保存数据偏好</button></div>
+              </div>
+            </div>
+            <div class="card danger-zone">
+              <div class="card-head"><h2>访问令牌</h2><small>api.token</small></div>
+              <div class="card-body">
+                <div class="token-box">tok_live_••••••••••••••••••••••••••••F29A</div>
+                <div class="btn-row"><button class="btn" type="button" data-action="copy">复制令牌片段</button><button class="btn danger" type="button" data-action="rotate">轮换令牌</button></div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><b></b><span></span></div>
+<script>
+(function(){
+  const titles = {};
+  const nav = Array.from(document.querySelectorAll('#settingsNav button'));
+  const forms = Array.from(document.querySelectorAll('.settings-section'));
+  const title = document.getElementById('sectionTitle');
+  const desc = document.getElementById('sectionDesc');
+  const saveState = document.getElementById('saveState');
+  const toast = document.getElementById('toast');
+  forms.forEach(form => { titles[form.id] = { title: form.dataset.title, desc: form.dataset.desc }; });
+
+  function showToast(heading, message){
+    toast.querySelector('b').textContent = heading;
+    toast.querySelector('span').textContent = message;
+    toast.classList.add('show');
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  function setActive(id){
+    nav.forEach(button => {
+      const active = button.dataset.target === id;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+    forms.forEach(form => form.classList.toggle('active', form.id === id));
+    title.textContent = titles[id].title;
+    desc.textContent = titles[id].desc;
+    const dirty = document.querySelector(`#settingsNav button[data-target="${id}"]`).classList.contains('dirty');
+    saveState.textContent = dirty ? '有未保存修改' : '已保存';
+    saveState.className = dirty ? 'status-pill dirty' : 'status-pill saved';
+  }
+
+  function validate(form){
+    let valid = true;
+    form.querySelectorAll('.field').forEach(field => {
+      const control = field.querySelector('input,select,textarea');
+      if(!control) return;
+      const required = field.hasAttribute('data-required');
+      const badEmail = control.type === 'email' && control.value && !control.checkValidity();
+      const badPassword = control.id === 'newPassword' && control.value && control.value.length < 8;
+      const empty = required && !control.value.trim();
+      const invalid = empty || badEmail || badPassword;
+      field.classList.toggle('invalid', invalid);
+      valid = valid && !invalid;
+    });
+    return valid;
+  }
+
+  nav.forEach(button => button.addEventListener('click', () => setActive(button.dataset.target)));
+
+  forms.forEach(form => {
+    form.addEventListener('input', () => {
+      const button = document.querySelector(`#settingsNav button[data-target="${form.id}"]`);
+      button.classList.add('dirty');
+      if(form.classList.contains('active')){
+        saveState.textContent = '有未保存修改';
+        saveState.className = 'status-pill dirty';
+      }
+    });
+    form.addEventListener('reset', () => {
+      window.setTimeout(() => {
+        form.querySelectorAll('.field').forEach(field => field.classList.remove('invalid'));
+        const button = document.querySelector(`#settingsNav button[data-target="${form.id}"]`);
+        button.classList.remove('dirty');
+        if(form.classList.contains('active')){
+          saveState.textContent = '已还原';
+          saveState.className = 'status-pill saved';
+        }
+        showToast('已还原本节', `${titles[form.id].title} 已恢复为上次保存状态。`);
+      });
+    });
+    form.addEventListener('submit', event => {
+      event.preventDefault();
+      if(!validate(form)){
+        showToast('无法保存', '请先修正标红字段后再保存。');
+        return;
+      }
+      const submitter = form.querySelector('button[type="submit"]');
+      if(submitter){
+        submitter.dataset.original = submitter.dataset.original || submitter.textContent;
+        submitter.disabled = true;
+        submitter.textContent = '保存中...';
+      }
+      window.setTimeout(() => {
+        const button = document.querySelector(`#settingsNav button[data-target="${form.id}"]`);
+        button.classList.remove('dirty');
+        saveState.textContent = '已保存';
+        saveState.className = 'status-pill saved';
+        if(submitter){
+          submitter.disabled = false;
+          submitter.textContent = submitter.dataset.original;
+        }
+        showToast('保存成功', `${titles[form.id].title} 已独立保存。`);
+      }, 520);
+    });
+  });
+
+  document.querySelectorAll('[data-action]').forEach(button => {
+    button.addEventListener('click', () => {
+      const action = button.dataset.action;
+      if(action === 'copy'){
+        navigator.clipboard?.writeText('tok_live_masked_F29A');
+        showToast('已复制', '令牌片段已复制到剪贴板。');
+      }else if(action === 'rotate'){
+        showToast('需要复验', '轮换访问令牌前需要完成高风险操作复验。');
+      }else if(action === 'revoke'){
+        const row = button.closest('tr');
+        row.querySelector('td:nth-child(4)').innerHTML = '<span class="tag red">已退出</span>';
+        button.disabled = true;
+        button.textContent = '完成';
+        showToast('会话已退出', '该设备需要重新登录后才能访问平台。');
+      }else if(action === 'codes'){
+        showToast('恢复代码', '正式实现中应在复验后打开一次性恢复代码弹窗。');
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
