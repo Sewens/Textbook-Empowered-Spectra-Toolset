@@ -221,3 +221,4 @@ __marimo__/
 /od-prototype/.od-skills
 *.lock
 /frontend/node_modules
+/nist_raw_data
