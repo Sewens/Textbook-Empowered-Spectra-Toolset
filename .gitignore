@@ -222,3 +222,5 @@ __marimo__/
 *.lock
 /frontend/node_modules
 /nist_raw_data
+
+/nist_data
