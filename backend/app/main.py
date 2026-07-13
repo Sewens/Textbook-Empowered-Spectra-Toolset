@@ -6,6 +6,7 @@ from app.api.routes.analysis import router as analysis_router
 from app.api.routes.graph import compound_router, graph_router, router as groups_router
 from app.api.routes.terms import router as terms_router
 from app.api.routes.user import router as user_router
+from app.api.routes.nist import router as nist_router
 from app.core.config import get_settings
 from app.core.security import CurrentUser, require_permission
 
@@ -26,6 +27,7 @@ app.include_router(compound_router, prefix=settings.api_prefix)
 app.include_router(analysis_router, prefix=settings.api_prefix)
 app.include_router(terms_router, prefix=settings.api_prefix)
 app.include_router(user_router, prefix=settings.api_prefix)
+app.include_router(nist_router, prefix=settings.api_prefix)
 
 spectra_dir = settings.release_path / "assets" / "spectra"
 if spectra_dir.exists():

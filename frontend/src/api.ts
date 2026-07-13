@@ -80,3 +80,8 @@ export async function fetchGraph(): Promise<GraphResponse> {
   const response = await api.get<GraphResponse>('/graph')
   return response.data
 }
+
+export async function fetchNistStats(): Promise<Record<string, unknown>> {
+  const response = await api.get<Record<string, unknown>>("/nist/stats")
+  return response.data
+}
