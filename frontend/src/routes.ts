@@ -3,7 +3,7 @@ import type { Locale } from "./types"
 export type ToolRoute = { key: string; path: string; title: Record<Locale, string>; hint: Record<Locale, string>; endpoint: string; requiredPermission?: string }
 
 export const toolRoutes: ToolRoute[] = [
-  { key: "overview", path: "/", title: { zh: "知识库总览", en: "Catalog Overview" }, hint: { zh: "版本、分区与实体统计", en: "release and partitions" }, endpoint: "GET /catalog/overview", requiredPermission: "project:read" },
+  { key: "overview", path: "/", title: { zh: "知识库总览", en: "Catalog Overview" }, hint: { zh: "版本、分区与实体统计", en: "release and partitions" }, endpoint: "GET /catalog/overview", requiredPermission: "group:read" },
   { key: "concepts", path: "/concepts", title: { zh: "概念与关系", en: "Concepts" }, hint: { zh: "官能团、振动、效应概念", en: "concept registry" }, endpoint: "GET /catalog/concepts", requiredPermission: "group:read" },
   { key: "materials", path: "/materials", title: { zh: "材料实体", en: "Materials" }, hint: { zh: "教材与外部材料记录", en: "material registry" }, endpoint: "GET /catalog/materials", requiredPermission: "compound:read" },
   { key: "spectra", path: "/spectra", title: { zh: "谱图索引", en: "Spectra" }, hint: { zh: "教材 accepted / NIST staging", en: "partitioned spectra" }, endpoint: "GET /catalog/spectra", requiredPermission: "spectrum:read" },

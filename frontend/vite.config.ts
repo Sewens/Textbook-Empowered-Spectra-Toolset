@@ -5,8 +5,8 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:8001',
-      '/assets/spectra': 'http://127.0.0.1:8001',
+      '/api': 'http://127.0.0.1:8000',
+      '/assets/spectra': 'http://127.0.0.1:8000',
     },
   },
 })
