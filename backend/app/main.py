@@ -3,11 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes.analysis import router as analysis_router
+from app.api.routes.catalog import build_router
 from app.api.routes.graph import compound_router, graph_router, router as groups_router
 from app.api.routes.terms import router as terms_router
 from app.api.routes.user import router as user_router
 from app.core.config import get_settings
 from app.core.security import CurrentUser, require_permission
+from app.services.catalog_service import CatalogService
 
 settings = get_settings()
 app = FastAPI(title=settings.app_name, version="0.7.0")
@@ -26,6 +28,7 @@ app.include_router(compound_router, prefix=settings.api_prefix)
 app.include_router(analysis_router, prefix=settings.api_prefix)
 app.include_router(terms_router, prefix=settings.api_prefix)
 app.include_router(user_router, prefix=settings.api_prefix)
+app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path)), prefix=settings.api_prefix)
 
 spectra_dir = settings.release_path / "assets" / "spectra"
 if spectra_dir.exists():

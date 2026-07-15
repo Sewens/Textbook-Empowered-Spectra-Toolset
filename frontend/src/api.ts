@@ -80,3 +80,29 @@ export async function fetchGraph(): Promise<GraphResponse> {
   const response = await api.get<GraphResponse>('/graph')
   return response.data
 }
+
+
+export async function fetchCatalogOverview() {
+  const response = await api.get<import("./types").CatalogOverview>("/catalog/overview")
+  return response.data
+}
+
+export async function fetchCatalogEntities(type: import("./types").CatalogEntityType, q?: string) {
+  const response = await api.get<{ total: number; items: import("./types").CatalogEntity[] }>("/catalog/" + type + "s", { params: { q } })
+  return response.data.items
+}
+
+export async function fetchCatalogSpectra(source_scope?: "textbook" | "nist", q?: string) {
+  const response = await api.get<{ total: number; items: import("./types").CatalogSpectrum[] }>("/catalog/spectra", { params: { source_scope, q } })
+  return response.data.items
+}
+
+export async function fetchCatalogEvidence(q?: string) {
+  const response = await api.get<{ total: number; items: import("./types").CatalogEvidence[] }>("/catalog/evidence", { params: { q } })
+  return response.data.items
+}
+
+export async function fetchCatalogGraph(): Promise<GraphResponse> {
+  const response = await api.get<GraphResponse>("/catalog/graph")
+  return response.data
+}

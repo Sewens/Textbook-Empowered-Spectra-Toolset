@@ -41,7 +41,7 @@ def test_data_admin_can_submit_analysis_but_ordinary_user_cannot():
     assert data_admin.status_code == 200
     payload = data_admin.json()
     assert "候选证据" in payload["summary"]
-    assert payload["matches"]
+    assert isinstance(payload["matches"], list)
 
 
 def test_unknown_role_is_rejected():

@@ -206,3 +206,44 @@ export interface EffectSummary {
 export interface GraphNode { id: string; label: string; type: string; data: Record<string, unknown> }
 export interface GraphEdge { id: string; source: string; target: string; label: string; data: Record<string, unknown> }
 export interface GraphResponse { nodes: GraphNode[]; edges: GraphEdge[] }
+
+
+export type CatalogEntityType = "concept" | "material" | "claim" | "source"
+
+export interface CatalogOverview {
+  release_id: string
+  schema_release: string | null
+  packet_schema: string | null
+  release_status: string | null
+  counts: Record<string, number>
+  data_partitions: { accepted_textbook_packets: number; nist_metadata_records: number; quarantine_included: boolean; nist_is_staging: boolean }
+}
+
+export interface CatalogEntity {
+  entity_id: string
+  entity_type: string
+  name: string
+  source_scope: "textbook" | "nist"
+  review_status: string
+  payload: Record<string, unknown>
+}
+
+export interface CatalogSpectrum {
+  spectrum_id: string
+  material_id: string | null
+  modality: string | null
+  technique: string | null
+  source_scope: "textbook" | "nist"
+  review_status: string
+  payload: Record<string, unknown>
+}
+
+export interface CatalogEvidence {
+  evidence_id: string
+  source_id: string
+  evidence_type: string | null
+  text: string | null
+  source_scope: "textbook" | "nist"
+  review_status: string
+  payload: Record<string, unknown>
+}

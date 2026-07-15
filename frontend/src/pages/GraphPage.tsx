@@ -2,12 +2,12 @@ import ReactECharts from 'echarts-for-react'
 import { Table, Tag } from 'antd'
 import { useQuery } from '@tanstack/react-query'
 
-import { fetchGraph } from '../api'
+import { fetchCatalogGraph } from '../api'
 import type { GraphNode } from '../types'
 import { ErrorBlock, LoadingBlock } from '../components/StateBlock'
 
 export default function GraphPage() {
-  const graphQuery = useQuery({ queryKey: ['graph'], queryFn: fetchGraph })
+  const graphQuery = useQuery({ queryKey: ['graph'], queryFn: fetchCatalogGraph })
   if (graphQuery.isLoading) return <LoadingBlock />
   if (graphQuery.error) return <ErrorBlock error={graphQuery.error} />
   const graph = graphQuery.data
