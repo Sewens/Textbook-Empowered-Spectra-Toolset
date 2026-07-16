@@ -38,3 +38,31 @@ def test_catalog_routes_expose_terms_groups_material_details_and_hierarchy(tmp_p
     assert client.get("/api/catalog/materials/CMPD_DEMO").json()["groups"][0]["group_id"] == "FG_DEMO"
     hierarchy = client.get("/api/catalog/hierarchy").json()
     assert hierarchy["edges"][0]["label"] == "has_reference_material"
+
+
+def test_catalog_routes_expose_multisource_terminology_catalog(tmp_path):
+    import json
+
+    from app.services.terminology_service import TerminologyCatalogService
+
+    catalog_path = tmp_path / "_terminology_catalog.json"
+    catalog_path.write_text(json.dumps({
+        "source_count": 2,
+        "terms": [{
+            "term_id": "TERM_wavenumber",
+            "concept_type": "radiation_quantity",
+            "preferred_name": {"zh": "波数", "en": "wavenumber"},
+            "all_source_forms": ["波数", "wavenumber"],
+            "source_book_count": 2,
+            "source_records": [{"book": "教材甲", "source_id": "SRC_A", "evidence_ids": ["EV_A"]}, {"book": "教材乙", "source_id": "SRC_B", "evidence_ids": ["EV_B"]}],
+            "all_evidence_ids": ["EV_A", "EV_B"],
+            "status": "candidate_needs_review"
+        }],
+        "source_specific_claims": [{"claim_id": "CL_A", "subject_ref": "TERM_wavenumber", "source_id": "SRC_A", "book": "教材甲", "evidence_ids": ["EV_A"]}],
+        "evidence_spans": [{"evidence_id": "EV_A", "book": "教材甲", "text_original": "波数是..."}, {"evidence_id": "EV_B", "book": "教材乙", "text_original": "Wavenumber is..."}]
+    }, ensure_ascii=False), encoding="utf-8")
+    terminology = TerminologyCatalogService(catalog_path)
+    assert terminology.overview_counts() == {"terminology_terms": 1, "terminology_sources": 2, "terminology_claims": 1, "terminology_evidence": 2}
+    item = terminology.get_term("TERM_wavenumber")
+    assert len(item["source_records"]) == 2
+    assert item["source_specific_claims"][0]["book"] == "教材甲"

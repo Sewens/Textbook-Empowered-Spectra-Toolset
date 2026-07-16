@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     catalog_database_path: Path = Path(__file__).resolve().parents[2] / ".runtime" / "spectrum_structure_effect_catalog.sqlite"
     legacy_reference_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "basic_groups_v07_20260619"
     docs_summary_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "docs" / "ir_ie_v07_core_data_model_v20260622.summary.json"
+    terminology_catalog_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "terminology" / "_terminology_catalog.json"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

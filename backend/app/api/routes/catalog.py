@@ -15,6 +15,13 @@ def build_router(service: CatalogService) -> APIRouter:
         items = service.list_terms(q, limit)
         return {"total": len(items), "items": items}
 
+    @router.get("/terms/{term_id}", name="catalog_term_detail")
+    def catalog_term_detail(term_id: str) -> dict:
+        item = service.get_term(term_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="Term not found")
+        return item
+
     @router.get("/groups/{group_id}")
     def group(group_id: str) -> dict:
         item = service.group_detail(group_id)

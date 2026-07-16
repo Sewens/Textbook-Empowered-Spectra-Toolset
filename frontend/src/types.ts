@@ -249,7 +249,9 @@ export interface CatalogEvidence {
 }
 
 
-export interface KnowledgeTerm { term_id: string; term_type: "concept" | "group"; name: string; source_scope: string; payload: Record<string, any> }
+export interface KnowledgeTerm { term_id: string; term_type: "concept" | "group"; name: string; source_scope: string; payload: { concept_type?: string; preferred_name?: { zh?: string; en?: string; source?: string }; all_source_forms?: string[]; source_book_count?: number; source_count?: number; evidence_count?: number; status?: string; [key: string]: any } }
+export interface TerminologySourceRecord { source_id?: string; book?: string; source_forms?: string[]; mention_count?: number; evidence_ids?: string[]; [key: string]: any }
+export interface TerminologyDetail extends KnowledgeTerm { source_records: TerminologySourceRecord[]; source_specific_claims: Array<Record<string, any>>; evidence_spans: Array<Record<string, any>> }
 export interface KnowledgeSpectrum { spectrum_id: string; material_id: string; image_url?: string | null; peaks: Array<{ measured_wavenumber?: number; peak_assignment?: string }>; payload: Record<string, any> }
 export interface GroupKnowledgeDetail extends CatalogEntity { materials: CatalogEntity[]; spectra: KnowledgeSpectrum[]; vibrations: Record<string, any>[] }
 export interface MaterialKnowledgeDetail extends CatalogEntity { groups: Array<CatalogEntity & { group_id: string }>; spectra: KnowledgeSpectrum[] }

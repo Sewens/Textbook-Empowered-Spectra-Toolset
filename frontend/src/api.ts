@@ -10,6 +10,7 @@ import type {
   RoleCode,
   SpectraRecord,
   WavenumberSearchResult,
+  TerminologyDetail,
 } from './types'
 
 const ROLE_STORAGE_KEY = 'spectra.role'
@@ -111,6 +112,11 @@ export async function fetchCatalogGraph(): Promise<GraphResponse> {
 export async function fetchCatalogTerms(q?: string) {
   const response = await api.get<{ total: number; items: import("./types").KnowledgeTerm[] }>("/catalog/terms", { params: { q } })
   return response.data.items
+}
+
+export async function fetchCatalogTerm(termId: string): Promise<TerminologyDetail> {
+  const response = await api.get<TerminologyDetail>("/catalog/terms/" + termId)
+  return response.data
 }
 
 export async function fetchCatalogGroup(groupId: string) {

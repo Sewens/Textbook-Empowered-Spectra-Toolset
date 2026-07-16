@@ -4,19 +4,23 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
+from app.services.terminology_service import TerminologyCatalogService
+
 
 class CatalogService:
-    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None) -> None:
+    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None) -> None:
         self.release_path = Path(release_path)
         self.legacy_reference_path = Path(legacy_reference_path) if legacy_reference_path else None
         self.database_path = Path(database_path)
+        self.terminology = TerminologyCatalogService(terminology_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_index()
 
     def overview(self) -> dict[str, Any]:
         inventory = self._read_json(self.release_path / "DATA_INVENTORY.json", {})
         counts = {label: self._count(kind) for label, kind in {"concepts": "concept", "materials": "material", "spectra": "spectrum", "features": "feature", "claims": "claim", "evidence": "evidence", "sources": "source"}.items()}
-        return {"release_id": inventory.get("release_id", self.release_path.name), "schema_release": inventory.get("schema_release"), "packet_schema": inventory.get("packet_schema"), "release_status": inventory.get("release_status"), "counts": counts, "data_partitions": {"accepted_textbook_packets": inventory.get("textbooks", {}).get("accepted_packets", 0), "nist_metadata_records": inventory.get("nist", {}).get("metadata_records", 0), "quarantine_included": False, "nist_is_staging": True}}
+        counts.update(self.terminology.overview_counts())
+        return {"release_id": inventory.get("release_id", self.release_path.name), "schema_release": inventory.get("schema_release"), "packet_schema": inventory.get("packet_schema"), "release_status": inventory.get("release_status"), "counts": counts, "data_partitions": {"accepted_textbook_packets": inventory.get("textbooks", {}).get("accepted_packets", 0), "nist_metadata_records": inventory.get("nist", {}).get("metadata_records", 0), "terminology_catalog": self.terminology.available, "quarantine_included": False, "nist_is_staging": True}}
 
     def list_entities(self, entity_type: str, query: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
         sql, values = "SELECT * FROM entity WHERE entity_type = ?", [entity_type]
@@ -213,6 +217,8 @@ class CatalogService:
 
 
     def list_terms(self, query: str | None = None, limit: int = 300) -> list[dict[str, Any]]:
+        if self.terminology.available:
+            return self.terminology.list_terms(query, limit)
         sql, values = "SELECT * FROM entity WHERE entity_type IN (\"concept\", \"group\")", []
         if query:
             sql += " AND (lower(name) LIKE ? OR lower(entity_id) LIKE ? OR lower(payload_json) LIKE ?)"
@@ -222,6 +228,11 @@ class CatalogService:
         values.append(limit)
         with self._connect() as con:
             return [{"term_id": row["entity_id"], "term_type": row["entity_type"], "name": row["name"], "source_scope": row["source_scope"], "payload": json.loads(row["payload_json"])} for row in con.execute(sql, values)]
+
+    def get_term(self, term_id: str) -> dict[str, Any] | None:
+        if self.terminology.available:
+            return self.terminology.get_term(term_id)
+        return self.get_entity(term_id)
 
     def group_detail(self, group_id: str) -> dict[str, Any] | None:
         group = self.get_entity(group_id)
