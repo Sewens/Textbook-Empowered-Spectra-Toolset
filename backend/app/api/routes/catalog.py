@@ -92,6 +92,15 @@ def build_router(service: CatalogService) -> APIRouter:
         books = service.textbook_inventory_books()
         return {"total": len(books), "items": books}
 
+    @router.get("/textbook-inventory/details/{kind}/{candidate_id}")
+    def textbook_inventory_unified_detail(kind: str, candidate_id: str) -> dict:
+        if kind not in {"materials", "spectra"}:
+            raise HTTPException(status_code=404, detail="Inventory detail kind not found")
+        item = service.textbook_inventory_unified_detail(kind, candidate_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="Inventory candidate not found")
+        return item
+
     @router.get("/textbook-inventory/assets/{book}/{asset_path:path}")
     def textbook_inventory_asset(book: str, asset_path: str, _user: CurrentUser = Depends(require_permission("evidence:read"))):
         path = service.textbook_inventory_asset(book, asset_path)

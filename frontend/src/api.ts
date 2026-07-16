@@ -164,3 +164,8 @@ export async function fetchTextbookInventoryDetail(kind: import("./types").Textb
   const response = await api.get<import("./types").TextbookInventoryDetail>("/catalog/textbook-inventory/" + kind + "/" + encodeURIComponent(candidateId))
   return response.data
 }
+
+export async function fetchTextbookInventoryUnifiedDetail(kind: "materials" | "spectra", candidateId: string): Promise<import("./types").UnifiedTextbookDetail> {
+  const response = await api.get<import("./types").UnifiedTextbookDetail>("/catalog/textbook-inventory/details/" + kind + "/" + encodeURIComponent(candidateId))
+  return response.data
+}

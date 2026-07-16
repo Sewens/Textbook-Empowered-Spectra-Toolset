@@ -284,3 +284,9 @@ export interface TextbookInventoryRow {
 export interface TextbookInventoryDetail extends TextbookInventoryRow {
   source_records: Array<Record<string, any>>
 }
+
+export interface UnifiedEvidence { id: string; type?: string; text?: string; page?: number; content_list_index?: number; bbox?: number[] }
+export interface UnifiedImage { id: string; book: string; path: string; caption?: string }
+export interface UnifiedSpectrum { id: string; caption?: string; page?: number; content_list_index?: number; features: Array<Record<string, any>>; images: UnifiedImage[]; evidence: UnifiedEvidence[] }
+export interface UnifiedSourceCard { book: string; source_id?: string; page?: number; content_list_index?: number; materials: Array<{ id: string; name?: string; source_forms?: string[]; material_type?: string }>; groups: Array<{ id: string; name?: string }>; spectra: UnifiedSpectrum[]; evidence: UnifiedEvidence[] }
+export interface UnifiedTextbookDetail { detail_kind: "material" | "spectrum"; id: string; title: string; review_status: string; books: string[]; source_count: number; source_cards: UnifiedSourceCard[] }

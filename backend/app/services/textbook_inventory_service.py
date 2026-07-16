@@ -77,6 +77,51 @@ class TextbookInventoryService:
     def group_detail(self, candidate_id: str) -> dict[str, Any] | None:
         return self._detail("groups", "group_candidate_id", candidate_id)
 
+    def unified_detail(self, kind: str, candidate_id: str) -> dict[str, Any] | None:
+        id_key = {"materials": "material_candidate_id", "spectra": "spectrum_candidate_id"}[kind]
+        item = self._get(kind, id_key, candidate_id)
+        if item is None:
+            return None
+        source_cards: list[dict[str, Any]] = []
+        for source in item.get("source_records", []):
+            book = source.get("book", "")
+            payload = self._source_book(book)
+            record = self._detail_from_book(kind, candidate_id, book) or source.get("record", {})
+            materials = {value.get("material_candidate_id"): value for value in payload.get("material_candidates", [])}
+            groups = {value.get("group_candidate_id"): value for value in payload.get("group_candidates", [])}
+            spectra = {value.get("spectrum_candidate_id"): value for value in payload.get("spectrum_candidates", [])}
+            features = {value.get("feature_candidate_id"): value for value in payload.get("feature_candidates", [])}
+            images = {value.get("image_candidate_id"): value for value in payload.get("image_candidates", [])}
+            evidence = {value.get("evidence_id"): value for value in payload.get("evidence_spans", [])}
+            spectrum_ids = record.get("spectrum_ids", []) if kind == "materials" else [candidate_id]
+            material_ids = record.get("material_candidate_ids", []) if kind == "spectra" else [candidate_id]
+            source_cards.append({
+                "book": book, "source_id": source.get("source_id"), "page": record.get("source_page"), "content_list_index": record.get("content_list_index"),
+                "materials": [self._material_card(materials[value]) for value in material_ids if value in materials],
+                "groups": [self._group_card(groups[value]) for value in record.get("group_candidate_ids", []) if value in groups],
+                "spectra": [self._spectrum_card(book, spectra[value], features, images, evidence) for value in spectrum_ids if value in spectra],
+                "evidence": [self._evidence_card(evidence[value]) for value in record.get("evidence_ids", []) if value in evidence],
+            })
+        summary = self._summary_item(kind, item)
+        return {"detail_kind": "material" if kind == "materials" else "spectrum", "id": candidate_id, "title": summary["name"], "review_status": summary["review_status"], "books": summary["books"], "source_count": summary["source_count"], "source_cards": source_cards}
+
+    @staticmethod
+    def _material_card(record: dict[str, Any]) -> dict[str, Any]:
+        return {"id": record.get("material_candidate_id"), "name": record.get("canonical_name_candidate"), "source_forms": record.get("source_forms", []), "material_type": record.get("material_type"), "review_status": record.get("promotion_status")}
+
+    @staticmethod
+    def _group_card(record: dict[str, Any]) -> dict[str, Any]:
+        preferred = record.get("preferred_name", {})
+        return {"id": record.get("group_candidate_id"), "name": preferred.get("zh") or preferred.get("en") or preferred.get("source") or record.get("group_candidate_id"), "review_status": record.get("promotion_status")}
+
+    @staticmethod
+    def _evidence_card(record: dict[str, Any]) -> dict[str, Any]:
+        locator = record.get("locator", {})
+        return {"id": record.get("evidence_id"), "type": record.get("evidence_type"), "text": record.get("text_original"), "page": locator.get("pdf_page"), "content_list_index": locator.get("content_list_index"), "bbox": locator.get("bbox")}
+
+    def _spectrum_card(self, book: str, record: dict[str, Any], features: dict[str, dict[str, Any]], images: dict[str, dict[str, Any]], evidence: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        return {"id": record.get("spectrum_candidate_id"), "caption": record.get("caption_or_context"), "page": record.get("source_page"), "content_list_index": record.get("content_list_index"), "features": [features[value] for value in record.get("feature_candidate_ids", []) if value in features], "images": [{"id": image.get("image_candidate_id"), "book": book, "path": image.get("source_image_path"), "caption": image.get("caption_or_nearby_context")} for value in record.get("image_candidate_ids", []) if (image := images.get(value)) and image.get("source_image_path")], "evidence": [self._evidence_card(evidence[value]) for value in record.get("evidence_ids", []) if value in evidence]}
+
     def _list(self, kind: str, query: str | None, book: str | None, limit: int) -> list[dict[str, Any]]:
         rows = []
         token = query.casefold() if query else None
@@ -170,7 +215,7 @@ class TextbookInventoryService:
     def _detail_from_book(self, kind: str, candidate_id: str, book: str) -> dict[str, Any] | None:
         payload = self._source_book(book)
         key = {"groups": "group_candidate_id", "materials": "material_candidate_id", "spectra": "spectrum_candidate_id"}[kind]
-        array_key = self._array_key(kind)
+        array_key = {"groups": "group_candidates", "materials": "material_candidates", "spectra": "spectrum_candidates"}[kind]
         return next((item for item in payload.get(array_key, []) if item.get(key) == candidate_id), None)
 
     @staticmethod
