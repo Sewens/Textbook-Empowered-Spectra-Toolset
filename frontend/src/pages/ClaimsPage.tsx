@@ -1,21 +1,6 @@
-import { Card, Empty, Table, Tag } from "antd"
+import { Card, Empty, Input, Segmented, Table, Tag } from "antd"
+import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-
-import { fetchCatalogEntities } from "../api"
-import type { CatalogEntity } from "../types"
+import { fetchCatalogClaims } from "../api"
 import { ErrorBlock, LoadingBlock } from "../components/StateBlock"
-
-function claimPayload(row: CatalogEntity): any { return row.payload }
-
-function objectLabel(payload: Record<string, any>) {
-  const object = payload.object ?? {}
-  return object.entity_ref || object.literal?.raw_text || object.literal?.value || "-"
-}
-
-export default function ClaimsPage() {
-  const query = useQuery({ queryKey: ["catalog-claims"], queryFn: () => fetchCatalogEntities("claim") })
-  if (query.isLoading) return <LoadingBlock />
-  if (query.error) return <ErrorBlock error={query.error} />
-  const claims = query.data ?? []
-  return <div className="claims-page"><section className="panel"><div className="panel-head"><div><h2>声明与效应</h2><small>仅展示教材抽取的可追溯声明；NIST staging 不会被提升为教材事实。</small></div><Tag color="blue">{claims.length} asserted claims</Tag></div><div className="panel-body flush">{claims.length === 0 ? <Empty description="当前发布包未提供可浏览声明" /> : <Table<CatalogEntity> size="small" rowKey="entity_id" dataSource={claims} pagination={false} expandable={{ expandedRowRender: (row) => <Card size="small" className="claim-note"><b>原文语义：</b>{claimPayload(row).qualifiers?.note || "-"}<br /><b>证据：</b>{(claimPayload(row).evidence_ids || []).join(", ") || "-"}</Card> }} columns={[{ title: "主体概念", render: (_, row) => claimPayload(row).subject_ref || "-", width: 250 }, { title: "关系", render: (_, row) => <Tag color="cyan">{claimPayload(row).predicate || row.name}</Tag>, width: 170 }, { title: "对象 / 效应", render: (_, row) => objectLabel(row.payload), minWidth: 300, ellipsis: true }, { title: "条件", render: (_, row) => claimPayload(row).qualifiers?.phase || claimPayload(row).qualifiers?.direction || "-", width: 180 }, { title: "置信度", render: (_, row) => claimPayload(row).extraction_confidence ?? "-", width: 100 }, { title: "状态", render: (_, row) => <Tag color={claimPayload(row).assertion_status === "asserted" ? "green" : "gold"}>{claimPayload(row).assertion_status || row.review_status}</Tag>, width: 110 }]} />}</div></section></div>
-}
+export default function ClaimsPage(){ const [q,setQ]=useState("");const [mode,setMode]=useState("all");const req=useQuery({queryKey:["claims",q,mode],queryFn:()=>fetchCatalogClaims(q||undefined,mode==="all"?undefined:mode)});if(req.isLoading)return <LoadingBlock/>;if(req.error)return <ErrorBlock error={req.error}/>;const rows=req.data||[];return <section className="panel full-panel"><div className="panel-head"><div><h2>声明与效应</h2><small>严格物质—谱图—证据声明：每条均保留教材、页码和 evidence ID。</small></div><Tag color="blue">{rows.length} claims</Tag></div><div className="panel-body"><div className="inline-actions" style={{marginBottom:12}}><Segmented value={mode} onChange={v=>setMode(String(v))} options={[{label:"全部",value:"all"},{label:"观测谱带",value:"has_observed_band"},{label:"位移效应",value:"shifted_by"},{label:"展宽效应",value:"broadened_by"}]}/><Input.Search allowClear placeholder="物质、谱图、教材或原文" onSearch={setQ}/></div>{rows.length?<Table size="small" rowKey="entity_id" dataSource={rows} pagination={{pageSize:20}} expandable={{expandedRowRender:r=>{const p:any=r.payload;return <Card size="small"><div><b>教材/页码：</b>{p.book} · {p.page}</div><div><b>谱图：</b>{p.spectrum_id}</div><div><b>证据：</b>{p.evidence_ids?.join(", ")}</div><div><b>原文：</b>{p.evidence_text}</div></Card>}}} columns={[{title:"物质",render:(_:any,r:any)=>r.payload.material_name,width:160},{title:"谱图",render:(_:any,r:any)=>r.payload.spectrum_id,width:220,ellipsis:true},{title:"关系",render:(_:any,r:any)=><Tag color="cyan">{r.payload.predicate}</Tag>,width:160},{title:"谱峰/效应",render:(_:any,r:any)=>r.payload.object_label,width:160},{title:"教材",render:(_:any,r:any)=>r.payload.book,width:220,ellipsis:true},{title:"页码",render:(_:any,r:any)=>r.payload.page,width:80},{title:"置信",render:(_:any,r:any)=>r.payload.extraction_confidence,width:80}]}/>:<Empty description="无符合严格证据门槛的声明"/>}</div></section>}

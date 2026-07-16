@@ -17,6 +17,10 @@ def default_textbook_inventory_path() -> Path:
     return bundled if bundled.exists() else external
 
 
+def default_material_spectrum_claims_path() -> Path:
+    return Path(__file__).resolve().parents[3] / "data" / "releases" / "material-spectrum-claims-v1.0.0"
+
+
 def default_material_spectrum_evidence_path() -> Path:
     repo_root = Path(__file__).resolve().parents[3]
     return repo_root / "data" / "releases" / "material-spectrum-evidence-v1.0.0"
@@ -34,6 +38,7 @@ class Settings(BaseSettings):
     terminology_catalog_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "terminology" / "_terminology_catalog.json"
     textbook_inventory_path: Path = default_textbook_inventory_path()
     material_spectrum_evidence_path: Path = default_material_spectrum_evidence_path()
+    material_spectrum_claims_path: Path = default_material_spectrum_claims_path()
     mineru_outputs_path: Path = Path(__file__).resolve().parents[3].parent.parent / "20260616 谱学教科书知识抽取加强版" / "outputs"
     nist_index_path: Path = Path("/share/lawbda/spectra_nist/nist_multimodal.sqlite")
 

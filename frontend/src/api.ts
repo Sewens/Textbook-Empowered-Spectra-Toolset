@@ -103,6 +103,11 @@ export async function fetchCatalogEvidence(q?: string, strength?: "high" | "medi
   return response.data.items
 }
 
+export async function fetchCatalogClaims(q?: string, predicate?: string) {
+  const response = await api.get<{ total: number; items: import("./types").CatalogEntity[] }>("/catalog/claims", { params: { q, predicate, limit: 1000 } })
+  return response.data.items
+}
+
 export async function fetchCatalogGraph(): Promise<GraphResponse> {
   const response = await api.get<GraphResponse>("/catalog/graph")
   return response.data

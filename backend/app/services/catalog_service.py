@@ -7,16 +7,18 @@ from typing import Any
 from app.services.terminology_service import TerminologyCatalogService
 from app.services.textbook_inventory_service import TextbookInventoryService
 from app.services.material_spectrum_evidence_service import MaterialSpectrumEvidenceService
+from app.services.material_spectrum_claims_service import MaterialSpectrumClaimsService
 
 
 class CatalogService:
-    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None, source_outputs_path: Path | None = None, material_spectrum_evidence_path: Path | None = None) -> None:
+    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None, source_outputs_path: Path | None = None, material_spectrum_evidence_path: Path | None = None, material_spectrum_claims_path: Path | None = None) -> None:
         self.release_path = Path(release_path)
         self.legacy_reference_path = Path(legacy_reference_path) if legacy_reference_path else None
         self.database_path = Path(database_path)
         self.terminology = TerminologyCatalogService(terminology_path)
         self.textbook_inventory = TextbookInventoryService(textbook_inventory_path, source_outputs_path) if textbook_inventory_path else None
         self.material_spectrum_evidence = MaterialSpectrumEvidenceService(inventory_path=textbook_inventory_path, release_path=material_spectrum_evidence_path)
+        self.material_spectrum_claims = MaterialSpectrumClaimsService(claims_release_path=material_spectrum_claims_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_index()
 
@@ -24,6 +26,8 @@ class CatalogService:
         inventory = self._read_json(self.release_path / "DATA_INVENTORY.json", {})
         counts = {label: self._count(kind) for label, kind in {"concepts": "concept", "materials": "material", "spectra": "spectrum", "features": "feature", "claims": "claim", "evidence": "evidence", "sources": "source"}.items()}
         counts.update(self.terminology.overview_counts())
+        if self.material_spectrum_claims.available:
+            counts["claims"] = self.material_spectrum_claims.overview()["total"]
         if self.textbook_inventory:
             counts.update(self.textbook_inventory.counts())
         if self.material_spectrum_evidence.available:
@@ -93,7 +97,9 @@ class CatalogService:
         with self._connect() as con:
             return [{"evidence_id": row["evidence_id"], "source_id": row["source_id"], "evidence_type": row["evidence_type"], "text": row["text"], "source_scope": row["source_scope"], "review_status": row["review_status"], "payload": json.loads(row["payload_json"])} for row in con.execute(sql, values)]
 
-    def list_claims(self, query: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    def list_claims(self, query: str | None = None, limit: int = 100, predicate: str | None = None) -> list[dict[str, Any]]:
+        if self.material_spectrum_claims.available:
+            return [{"entity_id": x["claim_id"], "entity_type": "claim", "name": x["predicate"], "source_scope": "textbook", "review_status": x["review_status"], "payload": x} for x in self.material_spectrum_claims.list_claims(query, predicate, limit)]
         return self.list_entities("claim", query, limit)
 
     def graph(self, limit: int = 800) -> dict[str, list[dict[str, Any]]]:
