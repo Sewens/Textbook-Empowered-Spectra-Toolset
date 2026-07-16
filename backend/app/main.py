@@ -7,6 +7,7 @@ from app.api.routes.catalog import build_router
 from app.api.routes.graph import compound_router, graph_router, router as groups_router
 from app.api.routes.terms import router as terms_router
 from app.api.routes.user import router as user_router
+from app.api.routes.nist import router as nist_router
 from app.core.config import get_settings
 from app.core.security import CurrentUser, require_permission
 from app.services.catalog_service import CatalogService
@@ -28,6 +29,7 @@ app.include_router(compound_router, prefix=settings.api_prefix)
 app.include_router(analysis_router, prefix=settings.api_prefix)
 app.include_router(terms_router, prefix=settings.api_prefix)
 app.include_router(user_router, prefix=settings.api_prefix)
+app.include_router(nist_router, prefix=settings.api_prefix)
 app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path, settings.legacy_reference_path, settings.terminology_catalog_path)), prefix=settings.api_prefix)
 
 spectra_dir = settings.release_path / "assets" / "spectra"

@@ -139,3 +139,8 @@ export async function fetchReferenceMaterials(q?: string) {
   const response = await api.get<{ total: number; items: import("./types").CatalogEntity[] }>("/catalog/reference-materials", { params: { q } })
   return response.data.items
 }
+
+export async function fetchNistStats(): Promise<Record<string, unknown>> {
+  const response = await api.get<Record<string, unknown>>("/nist/stats")
+  return response.data
+}
