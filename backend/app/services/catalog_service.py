@@ -224,6 +224,9 @@ class CatalogService:
     def textbook_inventory_overview(self) -> dict[str, Any]:
         return self.textbook_inventory.overview() if self.textbook_inventory else {"available": False, "book_count": 0, "totals": {}, "unique_catalogs": {}}
 
+    def material_relationship_graph(self) -> dict[str, Any]:
+        return self.textbook_inventory.material_relationship_graph() if self.textbook_inventory else {"run_id": None, "nodes": [], "edges": [], "stats": {}}
+
     def textbook_inventory_books(self) -> list[str]:
         return self.textbook_inventory.books() if self.textbook_inventory else []
 

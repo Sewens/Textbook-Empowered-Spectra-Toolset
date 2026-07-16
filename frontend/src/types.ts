@@ -207,6 +207,10 @@ export interface GraphNode { id: string; label: string; type: string; data: Reco
 export interface GraphEdge { id: string; source: string; target: string; label: string; data: Record<string, unknown> }
 export interface GraphResponse { nodes: GraphNode[]; edges: GraphEdge[] }
 
+export interface MaterialRelationshipNode { id: string; label: string; type: "functional_group" | "material"; relationship_status: string; books?: string[] }
+export interface MaterialRelationshipEdge { id: string; source: string; target: string; relation_type: "has_functional_group" | "shares_functional_groups"; label: string; derivation: string; shared_group_ids?: string[]; shared_group_count?: number; rules?: string[] }
+export interface MaterialRelationshipGraph { run_id: string | null; nodes: MaterialRelationshipNode[]; edges: MaterialRelationshipEdge[]; stats: Record<string, number>; policy: Record<string, string | boolean> }
+
 
 export type CatalogEntityType = "concept" | "material" | "claim" | "source"
 

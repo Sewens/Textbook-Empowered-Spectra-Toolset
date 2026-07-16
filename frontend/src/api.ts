@@ -134,6 +134,11 @@ export async function fetchCatalogHierarchy() {
   return response.data
 }
 
+export async function fetchMaterialRelationshipGraph(): Promise<import("./types").MaterialRelationshipGraph> {
+  const response = await api.get<import("./types").MaterialRelationshipGraph>("/catalog/material-relationship-graph")
+  return response.data
+}
+
 
 export async function fetchReferenceMaterials(q?: string) {
   const response = await api.get<{ total: number; items: import("./types").CatalogEntity[] }>("/catalog/reference-materials", { params: { q } })

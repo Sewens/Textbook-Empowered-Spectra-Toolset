@@ -83,6 +83,10 @@ def build_router(service: CatalogService) -> APIRouter:
     def graph(limit: int = Query(default=800, le=5000)) -> dict:
         return service.graph(limit)
 
+    @router.get("/material-relationship-graph")
+    def material_relationship_graph() -> dict:
+        return service.material_relationship_graph()
+
     @router.get("/textbook-inventory/overview")
     def textbook_inventory_overview() -> dict:
         return service.textbook_inventory_overview()

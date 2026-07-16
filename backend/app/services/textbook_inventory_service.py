@@ -159,6 +159,70 @@ class TextbookInventoryService:
             source_records.append(enriched)
         return self._summary_item(kind, item) | {"source_records": source_records}
 
+    _STRUCTURAL_GROUPS = {
+        "FG_ALDEHYDE": "醛基", "FG_AMIDE": "酰胺基", "FG_ANHYDRIDE": "酸酐基", "FG_CARBONYL": "羰基", "FG_CARBONYL_KETONE": "酮羰基", "FG_CARBOXYL": "羧基", "FG_CC_DOUBLE": "碳碳双键", "FG_CC_TRIPLE": "碳碳三键", "FG_CN_AMINE": "胺C-N", "FG_COC_ETHER": "醚键", "FG_ESTER": "酯基", "FG_HYDROXYL": "羟基", "FG_ISOCYANATE": "异氰酸酯基", "FG_METHYL": "甲基", "FG_METHYLENE": "亚甲基", "FG_NITRILE": "腈基", "FG_NITRO": "硝基",
+    }
+
+    def material_relationship_graph(self) -> dict[str, Any]:
+        """Return the all-material graph from conservative name-grounded rules."""
+        overview = self.overview()
+        if not overview.get("available"):
+            return {"run_id": None, "nodes": [], "edges": [], "stats": {}}
+        materials, memberships, rules = [], {}, {}
+        for item in self._load("materials").get("materials", []):
+            summary = self._summary_item("materials", item)
+            material_id = summary["candidate_id"]
+            group_rules = self._structural_groups_for_name(summary["name"])
+            memberships[material_id] = set(group_rules)
+            for group_id, values in group_rules.items():
+                rules[(material_id, group_id)] = values
+            materials.append({"id": material_id, "label": summary["name"], "type": "material", "books": summary["books"], "relationship_status": "name_rule_derived" if group_rules else "needs_structure_confirmation"})
+        group_ids = {group_id for groups in memberships.values() for group_id in groups}
+        nodes = [{"id": group_id, "label": self._STRUCTURAL_GROUPS[group_id], "type": "functional_group", "relationship_status": "controlled_root"} for group_id in sorted(group_ids)] + materials
+        edges = []
+        for material_id, groups in memberships.items():
+            for group_id in sorted(groups):
+                edges.append({"id": f"{group_id}__has_functional_group__{material_id}", "source": group_id, "target": material_id, "relation_type": "has_functional_group", "label": "组成基团", "derivation": "name_rule", "rules": rules[(material_id, group_id)]})
+        material_ids = sorted(memberships)
+        for index, left in enumerate(material_ids):
+            for right in material_ids[index + 1:]:
+                shared = memberships[left] & memberships[right]
+                if len(shared) >= 2:
+                    edges.append({"id": f"{left}__shares_functional_groups__{right}", "source": left, "target": right, "relation_type": "shares_functional_groups", "label": "共享基础基团", "derivation": "group_overlap", "shared_group_ids": sorted(shared), "shared_group_count": len(shared)})
+        return {"run_id": overview.get("run_id"), "nodes": nodes, "edges": edges, "stats": {"functional_groups": len(group_ids), "materials": len(materials), "material_group_edges": sum(edge["relation_type"] == "has_functional_group" for edge in edges), "material_similarity_edges": sum(edge["relation_type"] == "shares_functional_groups" for edge in edges), "unresolved_materials": sum(not groups for groups in memberships.values())}, "policy": {"structural_edges": "name_rule_derived", "contextual_group_candidates_included": False, "material_similarity": "shared_two_or_more_high_confidence_groups"}}
+
+    @classmethod
+    def _structural_groups_for_name(cls, name: str) -> dict[str, list[str]]:
+        value, groups = name.casefold().strip(), {}
+        def add(group_id: str, rule: str) -> None:
+            groups.setdefault(group_id, []).append(rule)
+        if any(term in value for term in ("alcohol", "methanol", "ethanol", "propanol", "butanol", "phenol")) or any(term in name for term in ("醇", "酚")):
+            add("FG_HYDROXYL", "alcohol_or_phenol_name")
+        if value in {"methanol", "甲醇"}:
+            add("FG_METHYL", "methanol_name")
+        elif value in {"ethanol", "乙醇"}:
+            add("FG_METHYL", "ethanol_name")
+            add("FG_METHYLENE", "ethanol_name")
+        if any(term in value for term in ("aldehyde", "formaldehyde")) or "醛" in name:
+            add("FG_ALDEHYDE", "aldehyde_name"); add("FG_CARBONYL", "aldehyde_name")
+        if any(term in value for term in ("ketone", "acetone")) or "酮" in name:
+            add("FG_CARBONYL_KETONE", "ketone_name"); add("FG_CARBONYL", "ketone_name")
+        if any(term in value for term in ("carboxylic acid", "benzoic acid", "acetic acid")) or "羧酸" in name:
+            add("FG_CARBOXYL", "carboxylic_acid_name")
+        if any(term in value for term in ("ester", "acetate")) or "酯" in name: add("FG_ESTER", "ester_name")
+        if "amide" in value or "酰胺" in name: add("FG_AMIDE", "amide_name")
+        if "nitrile" in value or "腈" in name: add("FG_NITRILE", "nitrile_name")
+        if "nitro" in value or "硝基" in name: add("FG_NITRO", "nitro_name")
+        if "isocyanate" in value or "异氰酸酯" in name: add("FG_ISOCYANATE", "isocyanate_name")
+        if "anhydride" in value or "酸酐" in name: add("FG_ANHYDRIDE", "anhydride_name")
+        if "ether" in value or "醚" in name: add("FG_COC_ETHER", "ether_name")
+        if "amine" in value or "胺" in name: add("FG_CN_AMINE", "amine_name")
+        if "methyl" in value or "甲基" in name: add("FG_METHYL", "methyl_name")
+        if "methylene" in value or "亚甲基" in name: add("FG_METHYLENE", "methylene_name")
+        if "alkene" in value or "烯" in name: add("FG_CC_DOUBLE", "alkene_name")
+        if "alkyne" in value or "炔" in name: add("FG_CC_TRIPLE", "alkyne_name")
+        return groups
+
     def asset_path(self, book: str, asset_path: str) -> Path | None:
         if not self.available or book not in self.books() or not self.source_outputs_path:
             return None
