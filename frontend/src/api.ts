@@ -106,3 +106,30 @@ export async function fetchCatalogGraph(): Promise<GraphResponse> {
   const response = await api.get<GraphResponse>("/catalog/graph")
   return response.data
 }
+
+
+export async function fetchCatalogTerms(q?: string) {
+  const response = await api.get<{ total: number; items: import("./types").KnowledgeTerm[] }>("/catalog/terms", { params: { q } })
+  return response.data.items
+}
+
+export async function fetchCatalogGroup(groupId: string) {
+  const response = await api.get<import("./types").GroupKnowledgeDetail>("/catalog/groups/" + groupId)
+  return response.data
+}
+
+export async function fetchCatalogMaterial(materialId: string) {
+  const response = await api.get<import("./types").MaterialKnowledgeDetail>("/catalog/materials/" + materialId)
+  return response.data
+}
+
+export async function fetchCatalogHierarchy() {
+  const response = await api.get<GraphResponse>("/catalog/hierarchy")
+  return response.data
+}
+
+
+export async function fetchReferenceMaterials(q?: string) {
+  const response = await api.get<{ total: number; items: import("./types").CatalogEntity[] }>("/catalog/reference-materials", { params: { q } })
+  return response.data.items
+}

@@ -58,3 +58,30 @@ def test_catalog_imports_accepted_textbook_and_staging_nist_records(tmp_path):
     graph = catalog.graph()
     assert {node["type"] for node in graph["nodes"]} >= {"concept", "material", "spectrum", "feature", "claim"}
     assert any(edge["label"] == "assigned_to" for edge in graph["edges"])
+
+
+def test_catalog_restores_legacy_term_group_material_and_hierarchy_views(tmp_path):
+    release = tmp_path / "release"
+    _write_json(release / "DATA_INVENTORY.json", {"release_id": "demo-v2"})
+    legacy = tmp_path / "legacy"
+    _write_json(legacy / "FG_CARBONYL.json", {
+        "group_id": "FG_CARBONYL",
+        "name_zh": "羰基",
+        "name_en": "Carbonyl",
+        "chemical_formula": "C=O",
+        "smarts": "[CX3]=O",
+        "parent_group_id": None,
+        "inherent_vibrations": [{"vibration_id": "VIB_CO", "base_wavenumber_range": [1680, 1750], "textbook_description": "C=O stretch"}],
+        "spectral_gallery": [{"figure_id": "SPEC_ACETONE", "compound_id": "CMPD_ACETONE", "compound_name_zh": "丙酮", "compound_name_en": "acetone", "molecular_formula": "C3H6O", "smiles": "CC(=O)C", "annotated_peaks": [{"measured_wavenumber": 1715, "peak_assignment": "C=O stretch"}]}],
+    })
+    catalog = CatalogService(release, tmp_path / "catalog.sqlite", legacy)
+
+    terms = catalog.list_terms()
+    assert terms[0]["term_id"] == "FG_CARBONYL"
+    group = catalog.group_detail("FG_CARBONYL")
+    assert group["spectra"][0]["peaks"][0]["measured_wavenumber"] == 1715
+    material = catalog.material_detail("CMPD_ACETONE")
+    assert material["groups"][0]["group_id"] == "FG_CARBONYL"
+    hierarchy = catalog.hierarchy()
+    assert hierarchy["nodes"][0]["type"] == "group"
+    assert hierarchy["edges"][0]["label"] == "has_reference_material"

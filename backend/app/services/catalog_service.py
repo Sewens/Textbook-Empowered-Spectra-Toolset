@@ -6,8 +6,9 @@ from typing import Any
 
 
 class CatalogService:
-    def __init__(self, release_path: Path, database_path: Path) -> None:
-        self.release_path = release_path
+    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None) -> None:
+        self.release_path = Path(release_path)
+        self.legacy_reference_path = Path(legacy_reference_path) if legacy_reference_path else None
         self.database_path = Path(database_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_index()
@@ -92,6 +93,7 @@ class CatalogService:
                 self._import_packet(con, self._read_json(path, {}))
             for record in self._read_jsonl(self.release_path / "nist" / "metadata_inventory" / "nist_ir_metadata_inventory.jsonl"):
                 self._import_nist(con, record)
+            self._import_legacy_reference(con)
             con.execute("INSERT INTO metadata VALUES (?, ?)", ("fingerprint", fingerprint))
             con.commit()
 
@@ -172,6 +174,8 @@ class CatalogService:
     def _fingerprint(self) -> str:
         digest = hashlib.sha256()
         paths = [self.release_path / "DATA_INVENTORY.json", self.release_path / "nist" / "metadata_inventory" / "nist_ir_metadata_inventory.jsonl"] + sorted((self.release_path / "textbooks" / "accepted_packets").glob("*.json"))
+        if self.legacy_reference_path and self.legacy_reference_path.exists():
+            paths.extend(sorted(self.legacy_reference_path.glob("FG_*.json")))
         for path in paths:
             if path.exists():
                 stat = path.stat()
@@ -204,4 +208,90 @@ class CatalogService:
 
     @staticmethod
     def _spectrum(row: sqlite3.Row) -> dict[str, Any]:
-        return {"spectrum_id": row["spectrum_id"], "material_id": row["material_id"], "modality": row["modality"], "technique": row["technique"], "source_scope": row["source_scope"], "review_status": row["review_status"], "payload": json.loads(row["payload_json"])}
+        payload = json.loads(row["payload_json"])
+        return {"spectrum_id": row["spectrum_id"], "material_id": row["material_id"], "modality": row["modality"], "technique": row["technique"], "source_scope": row["source_scope"], "review_status": row["review_status"], "peaks": payload.get("annotated_peaks") or payload.get("peaks") or [], "image_url": payload.get("image_url"), "payload": payload}
+
+
+    def list_terms(self, query: str | None = None, limit: int = 300) -> list[dict[str, Any]]:
+        sql, values = "SELECT * FROM entity WHERE entity_type IN (\"concept\", \"group\")", []
+        if query:
+            sql += " AND (lower(name) LIKE ? OR lower(entity_id) LIKE ? OR lower(payload_json) LIKE ?)"
+            token = f"%{query.lower()}%"
+            values.extend([token, token, token])
+        sql += " ORDER BY entity_type DESC, name COLLATE NOCASE LIMIT ?"
+        values.append(limit)
+        with self._connect() as con:
+            return [{"term_id": row["entity_id"], "term_type": row["entity_type"], "name": row["name"], "source_scope": row["source_scope"], "payload": json.loads(row["payload_json"])} for row in con.execute(sql, values)]
+
+    def group_detail(self, group_id: str) -> dict[str, Any] | None:
+        group = self.get_entity(group_id)
+        if not group or group["entity_type"] != "group":
+            return None
+        with self._connect() as con:
+            material_rows = [dict(row) for row in con.execute("SELECT target_id FROM relation WHERE source_id = ? AND predicate = ?", (group_id, "has_reference_material"))]
+            material_ids = [row["target_id"] for row in material_rows]
+            materials = [self._entity(row) for row in con.execute("SELECT * FROM entity WHERE entity_id IN (" + ",".join("?" for _ in material_ids) + ")", tuple(material_ids))] if material_ids else []
+            spectra = [self._spectrum(row) for row in con.execute("SELECT * FROM spectrum WHERE material_id IN (" + ",".join("?" for _ in material_ids) + ")", tuple(material_ids))] if material_ids else []
+        return group | {"materials": materials, "spectra": spectra, "vibrations": group["payload"].get("inherent_vibrations", [])}
+
+    def material_detail(self, material_id: str) -> dict[str, Any] | None:
+        material = self.get_entity(material_id)
+        if not material or material["entity_type"] != "material":
+            return None
+        with self._connect() as con:
+            groups = [self._entity(row) | {"group_id": row["entity_id"]} for row in con.execute("SELECT e.* FROM relation r JOIN entity e ON e.entity_id = r.source_id WHERE r.target_id = ? AND r.predicate = ?", (material_id, "has_reference_material"))]
+            spectra = [self._spectrum(row) for row in con.execute("SELECT * FROM spectrum WHERE material_id = ? ORDER BY spectrum_id", (material_id,))]
+        return material | {"groups": groups, "spectra": spectra}
+
+    def hierarchy(self, limit: int = 1200) -> dict[str, list[dict[str, Any]]]:
+        with self._connect() as con:
+            groups = [self._entity(row) for row in con.execute("SELECT * FROM entity WHERE entity_type = \"group\" ORDER BY name LIMIT ?", (limit,))]
+            group_ids = {item["entity_id"] for item in groups}
+            relations = [dict(row) for row in con.execute("SELECT * FROM relation WHERE predicate = \"has_reference_material\" ORDER BY source_id LIMIT ?", (limit * 8,))]
+            material_ids = {row["target_id"] for row in relations if row["source_id"] in group_ids}
+            materials = [self._entity(row) for row in con.execute("SELECT * FROM entity WHERE entity_id IN (" + ",".join("?" for _ in material_ids) + ")", tuple(material_ids))] if material_ids else []
+        nodes = [{"id": item["entity_id"], "label": item["name"], "type": item["entity_type"], "data": item} for item in groups + materials]
+        return {"nodes": nodes, "edges": [{"id": row["relation_id"], "source": row["source_id"], "target": row["target_id"], "label": row["predicate"], "data": json.loads(row["payload_json"])} for row in relations if row["source_id"] in group_ids and row["target_id"] in material_ids]}
+
+    def _import_legacy_reference(self, con: sqlite3.Connection) -> None:
+        if not self.legacy_reference_path or not self.legacy_reference_path.exists():
+            return
+        scope, source_id = "legacy_reference", "SRC_LEGACY_IR_REFERENCE_V07"
+        self._put_entity(con, source_id, "source", "IR Reference Cards v0.7", scope, "reference", {"source_type": "legacy_reference"})
+        for path in sorted(self.legacy_reference_path.glob("FG_*.json")):
+            group = self._read_json(path, {})
+            group_id = group.get("group_id")
+            if not group_id:
+                continue
+            name = group.get("name_zh") or group.get("group", {}).get("canonical_name_zh") or group_id
+            self._put_entity(con, group_id, "group", name, scope, "reference", group)
+            self._rel(con, source_id, group_id, "defines", scope, {})
+            for item in group.get("spectral_gallery", []):
+                material_id = item.get("compound_id") or "MAT_LEGACY_" + hashlib.sha1((item.get("smiles") or item.get("compound_name_en") or item.get("compound_name_zh") or item.get("figure_id", "")).encode()).hexdigest()[:16]
+                material = {"material_id": material_id, "name_zh": item.get("compound_name_zh"), "name_en": item.get("compound_name_en"), "formula": item.get("molecular_formula"), "smiles": item.get("smiles")}
+                self._put_entity(con, material_id, "material", item.get("compound_name_zh") or item.get("compound_name_en") or material_id, scope, "reference", material)
+                self._rel(con, group_id, material_id, "has_reference_material", scope, {"group_id": group_id})
+                spectrum_id = item.get("spectrum_id") or item.get("figure_id")
+                if spectrum_id:
+                    payload = item | {"group_id": group_id, "image_url": self._legacy_image_url(item.get("mineru_crop_image_path") or item.get("image_path"))}
+                    self._put_entity(con, spectrum_id, "spectrum", spectrum_id, scope, "reference", payload)
+                    con.execute("INSERT OR REPLACE INTO spectrum VALUES (?, ?, ?, ?, ?, ?, ?)", (spectrum_id, material_id, "IR", "reference_card", scope, "reference", self._dump(payload)))
+                    self._rel(con, material_id, spectrum_id, "has_spectrum", scope, {"group_id": group_id})
+
+    @staticmethod
+    def _legacy_image_url(path: str | None) -> str | None:
+        if not path:
+            return None
+        return "/assets/legacy-spectra/" + Path(path).name
+
+
+    def list_reference_materials(self, query: str | None = None, limit: int = 300) -> list[dict[str, Any]]:
+        sql, values = "SELECT * FROM entity WHERE entity_type = \"material\" AND source_scope IN (\"legacy_reference\", \"textbook\")", []
+        if query:
+            sql += " AND (lower(name) LIKE ? OR lower(entity_id) LIKE ? OR lower(payload_json) LIKE ?)"
+            token = f"%{query.lower()}%"
+            values.extend([token, token, token])
+        sql += " ORDER BY name COLLATE NOCASE LIMIT ?"
+        values.append(limit)
+        with self._connect() as con:
+            return [self._entity(row) for row in con.execute(sql, values)]

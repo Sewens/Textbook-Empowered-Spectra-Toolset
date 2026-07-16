@@ -247,3 +247,9 @@ export interface CatalogEvidence {
   review_status: string
   payload: Record<string, unknown>
 }
+
+
+export interface KnowledgeTerm { term_id: string; term_type: "concept" | "group"; name: string; source_scope: string; payload: Record<string, any> }
+export interface KnowledgeSpectrum { spectrum_id: string; material_id: string; image_url?: string | null; peaks: Array<{ measured_wavenumber?: number; peak_assignment?: string }>; payload: Record<string, any> }
+export interface GroupKnowledgeDetail extends CatalogEntity { materials: CatalogEntity[]; spectra: KnowledgeSpectrum[]; vibrations: Record<string, any>[] }
+export interface MaterialKnowledgeDetail extends CatalogEntity { groups: Array<CatalogEntity & { group_id: string }>; spectra: KnowledgeSpectrum[] }

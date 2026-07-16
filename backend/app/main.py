@@ -28,11 +28,14 @@ app.include_router(compound_router, prefix=settings.api_prefix)
 app.include_router(analysis_router, prefix=settings.api_prefix)
 app.include_router(terms_router, prefix=settings.api_prefix)
 app.include_router(user_router, prefix=settings.api_prefix)
-app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path)), prefix=settings.api_prefix)
+app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path, settings.legacy_reference_path)), prefix=settings.api_prefix)
 
 spectra_dir = settings.release_path / "assets" / "spectra"
+legacy_spectra_dir = settings.legacy_reference_path / "assets" / "spectra"
 if spectra_dir.exists():
     app.mount("/assets/spectra", StaticFiles(directory=spectra_dir), name="spectra")
+if legacy_spectra_dir.exists():
+    app.mount("/assets/legacy-spectra", StaticFiles(directory=legacy_spectra_dir), name="legacy-spectra")
 
 
 @app.get("/health")
