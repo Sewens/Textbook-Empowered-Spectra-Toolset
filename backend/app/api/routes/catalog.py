@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import FileResponse
 
 from app.services.catalog_service import CatalogService
 
@@ -80,5 +81,37 @@ def build_router(service: CatalogService) -> APIRouter:
     @router.get("/graph")
     def graph(limit: int = Query(default=800, le=5000)) -> dict:
         return service.graph(limit)
+
+    @router.get("/textbook-inventory/overview")
+    def textbook_inventory_overview() -> dict:
+        return service.textbook_inventory_overview()
+
+    @router.get("/textbook-inventory/books")
+    def textbook_inventory_books() -> dict:
+        books = service.textbook_inventory_books()
+        return {"total": len(books), "items": books}
+
+    @router.get("/textbook-inventory/assets/{book}/{asset_path:path}")
+    def textbook_inventory_asset(book: str, asset_path: str):
+        path = service.textbook_inventory_asset(book, asset_path)
+        if path is None:
+            raise HTTPException(status_code=404, detail="Inventory asset not found")
+        return FileResponse(path)
+
+    @router.get("/textbook-inventory/{kind}")
+    def textbook_inventory_list(kind: str, q: str | None = Query(default=None), book: str | None = Query(default=None), limit: int = Query(default=100, le=500)) -> dict:
+        if kind not in {"groups", "materials", "spectra"}:
+            raise HTTPException(status_code=404, detail="Inventory kind not found")
+        items = service.textbook_inventory_list(kind, q, book, limit)
+        return {"total": len(items), "items": items}
+
+    @router.get("/textbook-inventory/{kind}/{candidate_id}")
+    def textbook_inventory_detail(kind: str, candidate_id: str) -> dict:
+        if kind not in {"groups", "materials", "spectra"}:
+            raise HTTPException(status_code=404, detail="Inventory kind not found")
+        item = service.textbook_inventory_detail(kind, candidate_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="Inventory candidate not found")
+        return item
 
     return router

@@ -255,3 +255,32 @@ export interface TerminologyDetail extends KnowledgeTerm { source_records: Termi
 export interface KnowledgeSpectrum { spectrum_id: string; material_id: string; image_url?: string | null; peaks: Array<{ measured_wavenumber?: number; peak_assignment?: string }>; payload: Record<string, any> }
 export interface GroupKnowledgeDetail extends CatalogEntity { materials: CatalogEntity[]; spectra: KnowledgeSpectrum[]; vibrations: Record<string, any>[] }
 export interface MaterialKnowledgeDetail extends CatalogEntity { groups: Array<CatalogEntity & { group_id: string }>; spectra: KnowledgeSpectrum[] }
+
+export type TextbookInventoryKind = "groups" | "materials" | "spectra"
+export interface TextbookInventoryOverview {
+  available: boolean
+  run_id?: string | null
+  book_count: number
+  totals: Record<string, number>
+  unique_catalogs: Record<string, number>
+  policy?: Record<string, unknown>
+}
+export interface TextbookInventoryRow {
+  candidate_id: string
+  candidate_type: "group" | "material" | "spectrum"
+  name: string
+  book_count: number
+  source_count: number
+  mention_count?: number
+  spectrum_count?: number
+  group_count?: number
+  feature_count?: number
+  image_count?: number
+  evidence_count?: number
+  material_count?: number
+  review_status: string
+  books: string[]
+}
+export interface TextbookInventoryDetail extends TextbookInventoryRow {
+  source_records: Array<Record<string, any>>
+}

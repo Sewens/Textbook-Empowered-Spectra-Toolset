@@ -144,3 +144,23 @@ export async function fetchNistStats(): Promise<Record<string, unknown>> {
   const response = await api.get<Record<string, unknown>>("/nist/stats")
   return response.data
 }
+
+export async function fetchTextbookInventoryOverview(): Promise<import("./types").TextbookInventoryOverview> {
+  const response = await api.get<import("./types").TextbookInventoryOverview>("/catalog/textbook-inventory/overview")
+  return response.data
+}
+
+export async function fetchTextbookInventoryBooks(): Promise<string[]> {
+  const response = await api.get<{ total: number; items: string[] }>("/catalog/textbook-inventory/books")
+  return response.data.items
+}
+
+export async function fetchTextbookInventory(kind: import("./types").TextbookInventoryKind, q?: string, book?: string): Promise<import("./types").TextbookInventoryRow[]> {
+  const response = await api.get<{ total: number; items: import("./types").TextbookInventoryRow[] }>("/catalog/textbook-inventory/" + kind, { params: { q, book, limit: 500 } })
+  return response.data.items
+}
+
+export async function fetchTextbookInventoryDetail(kind: import("./types").TextbookInventoryKind, candidateId: string): Promise<import("./types").TextbookInventoryDetail> {
+  const response = await api.get<import("./types").TextbookInventoryDetail>("/catalog/textbook-inventory/" + kind + "/" + encodeURIComponent(candidateId))
+  return response.data
+}

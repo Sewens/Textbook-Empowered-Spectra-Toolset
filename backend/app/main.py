@@ -30,7 +30,7 @@ app.include_router(analysis_router, prefix=settings.api_prefix)
 app.include_router(terms_router, prefix=settings.api_prefix)
 app.include_router(user_router, prefix=settings.api_prefix)
 app.include_router(nist_router, prefix=settings.api_prefix)
-app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path, settings.legacy_reference_path, settings.terminology_catalog_path)), prefix=settings.api_prefix)
+app.include_router(build_router(CatalogService(settings.release_path, settings.catalog_database_path, settings.legacy_reference_path, settings.terminology_catalog_path, settings.textbook_inventory_path)), prefix=settings.api_prefix)
 
 spectra_dir = settings.release_path / "assets" / "spectra"
 legacy_spectra_dir = settings.legacy_reference_path / "assets" / "spectra"

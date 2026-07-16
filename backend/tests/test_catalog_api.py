@@ -66,3 +66,27 @@ def test_catalog_routes_expose_multisource_terminology_catalog(tmp_path):
     item = terminology.get_term("TERM_wavenumber")
     assert len(item["source_records"]) == 2
     assert item["source_specific_claims"][0]["book"] == "教材甲"
+
+
+def test_catalog_routes_expose_textbook_inventory(tmp_path):
+    inventory = tmp_path / "material_spectra"
+    inventory.mkdir()
+    summary = {"run_id": "run-test", "book_count": 1, "totals": {"features": 1, "images": 1, "evidence": 1}, "unique_catalogs": {"groups": 1, "materials": 1, "spectra": 1}, "books": [{"book": "教材甲"}]}
+    (inventory / "_all_books_summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    (inventory / "_group_catalog.json").write_text(json.dumps({"groups": [{"group_candidate_id": "GROUP_A", "source_records": [{"book": "教材甲", "record": {"preferred_name": {"zh": "羰基"}, "mention_count": 2, "spectrum_ids": ["SPEC_A"]}}]}]}, ensure_ascii=False), encoding="utf-8")
+    (inventory / "_compound_catalog.json").write_text(json.dumps({"materials": [{"material_candidate_id": "MAT_A", "source_records": [{"book": "教材甲", "record": {"canonical_name_candidate": "苯", "mention_count": 1, "group_candidate_ids": ["GROUP_A"], "spectrum_ids": ["SPEC_A"], "evidence_ids": ["EV_A"]}}]}]}, ensure_ascii=False), encoding="utf-8")
+    (inventory / "_spectrum_catalog.json").write_text(json.dumps({"spectra": [{"spectrum_candidate_id": "SPEC_A", "source_records": [{"book": "教材甲", "record": {"material_candidate_ids": ["MAT_A"], "group_candidate_ids": ["GROUP_A"], "feature_candidate_ids": ["FEAT_A"], "image_candidate_ids": ["IMG_A"], "caption_or_context": "苯的红外光谱"}}]}]}, ensure_ascii=False), encoding="utf-8")
+    release = tmp_path / "release"
+    release.mkdir()
+    (release / "DATA_INVENTORY.json").write_text(json.dumps({"release_id": "api-demo"}), encoding="utf-8")
+    catalog = CatalogService(release, tmp_path / "catalog.sqlite", textbook_inventory_path=inventory)
+    app = FastAPI()
+    app.include_router(build_router(catalog), prefix="/api")
+    client = TestClient(app)
+    assert client.get("/api/catalog/textbook-inventory/overview").json()["book_count"] == 1
+    assert client.get("/api/catalog/textbook-inventory/materials").json()["items"][0]["candidate_id"] == "MAT_A"
+    assert client.get("/api/catalog/textbook-inventory/spectra/SPEC_A").json()["source_records"][0]["book"] == "教材甲"
+    asset = inventory / "教材甲" / "unzipped" / "images"
+    asset.mkdir(parents=True)
+    (asset / "figure.txt").write_text("asset", encoding="utf-8")
+    assert client.get("/api/catalog/textbook-inventory/assets/%E6%95%99%E6%9D%90%E7%94%B2/images/figure.txt").text == "asset"
