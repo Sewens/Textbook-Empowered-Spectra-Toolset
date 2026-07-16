@@ -10,7 +10,7 @@ export const toolRoutes: ToolRoute[] = [
   { key: "spectra", path: "/spectra", title: { zh: "全量谱图索引", en: "All Spectra" }, hint: { zh: "教材 / NIST 分区", en: "partitioned spectra" }, endpoint: "GET /catalog/spectra", requiredPermission: "spectrum:read" },
   { key: "hierarchy", path: "/hierarchy", title: { zh: "基团-物质层级", en: "Group Tree" }, hint: { zh: "根基团与叶物质", en: "roots and leaves" }, endpoint: "GET /catalog/hierarchy", requiredPermission: "group:read" },
   { key: "evidence", path: "/evidence", title: { zh: "证据链", en: "Evidence" }, hint: { zh: "原文片段与定位", en: "provenance spans" }, endpoint: "GET /catalog/evidence", requiredPermission: "evidence:read" },
-  { key: "claims", path: "/claims", title: { zh: "声明与效应", en: "Claims" }, hint: { zh: "谱-构-效可追溯结论", en: "traceable claims" }, endpoint: "GET /catalog/claims", requiredPermission: "analysis:create" },
+  { key: "claims", path: "/claims", title: { zh: "声明与效应", en: "Claims" }, hint: { zh: "谱-构-效可追溯结论", en: "traceable claims" }, endpoint: "GET /catalog/claims", requiredPermission: "evidence:read" },
 ]
 
 export function routeForPath(pathname: string): ToolRoute { return toolRoutes.find((route) => route.path !== "/" && pathname.startsWith(route.path)) ?? toolRoutes[0] }
