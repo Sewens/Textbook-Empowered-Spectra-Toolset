@@ -26,15 +26,15 @@ export default function MaterialsPage() {
   if (overview.isLoading || rows.isLoading) return <LoadingBlock />
   if (overview.error || rows.error) return <ErrorBlock error={overview.error ?? rows.error} />
   const data = overview.data
-  if (!data?.available) return <Alert type="warning" message="教材 staging 目录不可用" description="请检查 0714谱构效数据/material_spectra 的配置路径。" />
+  if (!data?.available) return <Alert type="warning" message="教材精筛物质目录不可用" description="请检查 0714谱构效数据/material_spectra_accepted 的配置路径。" />
   return <div className="panel full-panel">
-    <div className="panel-head"><div><h2>物质谱图</h2><small>{data.run_id} · {data.book_count}本教材 · staging 候选</small></div><Tag color="warning">candidate_needs_review</Tag></div>
+    <div className="panel-head"><div><h2>物质谱图</h2><small>{data.run_id} · {data.book_count}本教材 · 精筛物质候选（图表直接命名证据）</small></div><Tag color="warning">precision_screened_needs_review</Tag></div>
     <div className="panel-body">
       <Alert type="info" showIcon message="本页以物质为中心展示关联基团、谱图和教材证据；候选状态和原始来源均保留。" />
       <div className="stat-grid" style={{ margin: "18px 0" }}>
         <Statistic title="教材" value={data.book_count} />
         <Statistic title="基团候选" value={data.unique_catalogs.groups} />
-        <Statistic title="化合物候选" value={data.unique_catalogs.materials} />
+        <Statistic title="精筛物质" value={data.unique_catalogs.materials} />
         <Statistic title="谱图候选" value={data.unique_catalogs.spectra} />
       </div>
       <Tabs activeKey={kind} onChange={(key) => setKind(key as TextbookInventoryKind)} items={(Object.keys(labels) as TextbookInventoryKind[]).map((key) => ({ key, label: labels[key] }))} />
