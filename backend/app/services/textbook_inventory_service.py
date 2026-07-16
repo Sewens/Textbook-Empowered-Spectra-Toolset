@@ -170,7 +170,7 @@ class TextbookInventoryService:
     def _detail_from_book(self, kind: str, candidate_id: str, book: str) -> dict[str, Any] | None:
         payload = self._source_book(book)
         key = {"groups": "group_candidate_id", "materials": "material_candidate_id", "spectra": "spectrum_candidate_id"}[kind]
-        array_key = self._array_key(kind)
+        array_key = {"groups": "group_candidates", "materials": "material_candidates", "spectra": "spectrum_candidates"}[kind]
         return next((item for item in payload.get(array_key, []) if item.get(key) == candidate_id), None)
 
     @staticmethod
