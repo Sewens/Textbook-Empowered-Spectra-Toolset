@@ -79,12 +79,37 @@ class TextbookInventoryService:
     def group_detail(self, candidate_id: str) -> dict[str, Any] | None:
         return self._detail("groups", "group_candidate_id", candidate_id)
 
-    def unified_detail(self, kind: str, candidate_id: str) -> dict[str, Any] | None:
+    def unified_detail(
+        self,
+        kind: str,
+        candidate_id: str,
+        *,
+        offset: int = 0,
+        limit: int = 12,
+        threshold: int = 12,
+    ) -> dict[str, Any] | None:
+        """Return material/spectrum detail with waterfall-friendly spectrum pagination.
+
+        Always returns a summary header. Spectra are flattened across books and returned
+        as a pageable stream under items. When total spectra exceed threshold,
+        clients should load subsequent pages with offset/limit instead of expanding all.
+        """
         id_key = {"materials": "material_candidate_id", "spectra": "spectrum_candidate_id"}[kind]
         item = self._get(kind, id_key, candidate_id)
         if item is None:
             return None
-        source_cards: list[dict[str, Any]] = []
+
+        offset = max(0, int(offset or 0))
+        limit = max(1, min(int(limit or 12), 50))
+        threshold = max(1, int(threshold or 12))
+
+        books_meta: list[dict[str, Any]] = []
+        flat_spectra: list[dict[str, Any]] = []
+        group_map: dict[str, dict[str, Any]] = {}
+        material_map: dict[str, dict[str, Any]] = {}
+        total_evidence = 0
+        total_images = 0
+
         for source in item.get("source_records", []):
             book = source.get("book", "")
             payload = self._source_book(book)
@@ -95,17 +120,123 @@ class TextbookInventoryService:
             features = {value.get("feature_candidate_id"): value for value in payload.get("feature_candidates", [])}
             images = {value.get("image_candidate_id"): value for value in payload.get("image_candidates", [])}
             evidence = {value.get("evidence_id"): value for value in payload.get("evidence_spans", [])}
+
             spectrum_ids = record.get("spectrum_ids", []) if kind == "materials" else [candidate_id]
             material_ids = record.get("material_candidate_ids", []) if kind == "spectra" else [candidate_id]
-            source_cards.append({
-                "book": book, "source_id": source.get("source_id"), "page": record.get("source_page"), "content_list_index": record.get("content_list_index"),
-                "materials": [self._material_card(materials[value]) for value in material_ids if value in materials],
-                "groups": [self._group_card(groups[value]) for value in record.get("group_candidate_ids", []) if value in groups],
-                "spectra": [self._spectrum_card(book, spectra[value], features, images, evidence) for value in spectrum_ids if value in spectra],
-                "evidence": [self._evidence_card(evidence[value]) for value in record.get("evidence_ids", []) if value in evidence],
+            group_ids = record.get("group_candidate_ids", [])
+            evidence_ids = [eid for eid in record.get("evidence_ids", []) if eid in evidence]
+            total_evidence += len(evidence_ids)
+
+            book_materials = [self._material_card(materials[mid]) for mid in material_ids if mid in materials]
+            book_groups = [self._group_card(groups[gid]) for gid in group_ids if gid in groups]
+            for mat in book_materials:
+                if mat.get("id"):
+                    material_map[mat["id"]] = mat
+            for group in book_groups:
+                if group.get("id"):
+                    group_map[group["id"]] = group
+
+            ranked_spectrum_ids = sorted(
+                [sid for sid in spectrum_ids if sid in spectra],
+                key=lambda sid: (
+                    0 if any((images.get(iid) or {}).get("source_image_path") for iid in (spectra[sid].get("image_candidate_ids") or [])) else 1,
+                    sid,
+                ),
+            )
+            book_image_count = 0
+            for sid in ranked_spectrum_ids:
+                card = self._spectrum_card(book, spectra[sid], features, images, evidence)
+                book_image_count += len(card.get("images") or [])
+                flat_spectra.append({
+                    "book": book,
+                    "source_id": source.get("source_id"),
+                    "page": card.get("page") or record.get("source_page"),
+                    "content_list_index": card.get("content_list_index") or record.get("content_list_index"),
+                    "spectrum": card,
+                })
+            total_images += book_image_count
+            books_meta.append({
+                "book": book,
+                "source_id": source.get("source_id"),
+                "page": record.get("source_page"),
+                "content_list_index": record.get("content_list_index"),
+                "materials": book_materials,
+                "groups": book_groups,
+                "spectra_total": len(ranked_spectrum_ids),
+                "evidence_total": len(evidence_ids),
+                "images_total": book_image_count,
             })
+
+        spectra_total = len(flat_spectra)
+        stream_mode = spectra_total > threshold
+        page_items = flat_spectra[offset: offset + limit]
+        returned = len(page_items)
+        next_offset = offset + returned
+        has_more = next_offset < spectra_total
         summary = self._summary_item(kind, item)
-        return {"detail_kind": "material" if kind == "materials" else "spectrum", "id": candidate_id, "title": summary["name"], "review_status": summary["review_status"], "books": summary["books"], "source_count": summary["source_count"], "source_cards": source_cards}
+        return {
+            "detail_kind": "material" if kind == "materials" else "spectrum",
+            "id": candidate_id,
+            "title": summary["name"],
+            "review_status": summary["review_status"],
+            "books": summary["books"],
+            "source_count": summary["source_count"],
+            "materials": list(material_map.values()),
+            "groups": list(group_map.values()),
+            "book_summaries": books_meta,
+            "items": page_items,
+            "counts": {
+                "spectra_total": spectra_total,
+                "evidence_total": total_evidence,
+                "images_total": total_images,
+                "returned": returned,
+                "threshold": threshold,
+                "stream": stream_mode,
+            },
+            "page": {
+                "offset": offset,
+                "limit": limit,
+                "returned": returned,
+                "has_more": has_more,
+                "next_offset": next_offset if has_more else None,
+            },
+            # Backward-compatible nested cards for current page only.
+            "source_cards": self._group_stream_items_as_source_cards(page_items, books_meta),
+        }
+
+    def _group_stream_items_as_source_cards(self, items: list[dict[str, Any]], books_meta: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        meta = {row.get("book"): row for row in books_meta}
+        order: list[str] = []
+        buckets: dict[str, list[dict[str, Any]]] = {}
+        for item in items:
+            book = item.get("book") or ""
+            if book not in buckets:
+                buckets[book] = []
+                order.append(book)
+            buckets[book].append(item.get("spectrum") or {})
+        cards: list[dict[str, Any]] = []
+        for book in order:
+            info = meta.get(book, {"book": book, "materials": [], "groups": [], "spectra_total": 0, "evidence_total": 0})
+            spectra = buckets.get(book, [])
+            cards.append({
+                "book": book,
+                "source_id": info.get("source_id"),
+                "page": info.get("page"),
+                "content_list_index": info.get("content_list_index"),
+                "materials": info.get("materials", []),
+                "groups": info.get("groups", []),
+                "spectra": spectra,
+                "evidence": [],
+                "counts": {
+                    "spectra_total": info.get("spectra_total", 0),
+                    "spectra_returned": len(spectra),
+                    "evidence_total": info.get("evidence_total", 0),
+                    "evidence_returned": 0,
+                    "images_returned": sum(len(spec.get("images") or []) for spec in spectra),
+                    "truncated": (info.get("spectra_total", 0) or 0) > len(spectra),
+                },
+            })
+        return cards
 
     @staticmethod
     def _material_card(record: dict[str, Any]) -> dict[str, Any]:
@@ -119,10 +250,27 @@ class TextbookInventoryService:
     @staticmethod
     def _evidence_card(record: dict[str, Any]) -> dict[str, Any]:
         locator = record.get("locator", {})
-        return {"id": record.get("evidence_id"), "type": record.get("evidence_type"), "text": record.get("text_original"), "page": locator.get("pdf_page"), "content_list_index": locator.get("content_list_index"), "bbox": locator.get("bbox")}
+        text = record.get("text_original") or ""
+        if len(text) > 500:
+            text = text[:500] + "..."
+        return {"id": record.get("evidence_id"), "type": record.get("evidence_type"), "text": text, "page": locator.get("pdf_page"), "content_list_index": locator.get("content_list_index"), "bbox": locator.get("bbox")}
 
     def _spectrum_card(self, book: str, record: dict[str, Any], features: dict[str, dict[str, Any]], images: dict[str, dict[str, Any]], evidence: dict[str, dict[str, Any]]) -> dict[str, Any]:
-        return {"id": record.get("spectrum_candidate_id"), "caption": record.get("caption_or_context"), "page": record.get("source_page"), "content_list_index": record.get("content_list_index"), "features": [features[value] for value in record.get("feature_candidate_ids", []) if value in features], "images": [{"id": image.get("image_candidate_id"), "book": book, "path": image.get("source_image_path"), "caption": image.get("caption_or_nearby_context")} for value in record.get("image_candidate_ids", []) if (image := images.get(value)) and image.get("source_image_path")], "evidence": [self._evidence_card(evidence[value]) for value in record.get("evidence_ids", []) if value in evidence]}
+        caption = record.get("caption_or_context") or ""
+        if len(caption) > 400:
+            caption = caption[:400] + "..."
+        feature_ids = (record.get("feature_candidate_ids") or [])[:12]
+        evidence_ids = (record.get("evidence_ids") or [])[:3]
+        image_ids = (record.get("image_candidate_ids") or [])[:2]
+        return {
+            "id": record.get("spectrum_candidate_id"),
+            "caption": caption,
+            "page": record.get("source_page"),
+            "content_list_index": record.get("content_list_index"),
+            "features": [features[value] for value in feature_ids if value in features],
+            "images": [{"id": image.get("image_candidate_id"), "book": book, "path": image.get("source_image_path"), "caption": image.get("caption_or_nearby_context")} for value in image_ids if (image := images.get(value)) and image.get("source_image_path")],
+            "evidence": [self._evidence_card(evidence[value]) for value in evidence_ids if value in evidence],
+        }
 
     def _list(self, kind: str, query: str | None, book: str | None, limit: int) -> list[dict[str, Any]]:
         rows = []

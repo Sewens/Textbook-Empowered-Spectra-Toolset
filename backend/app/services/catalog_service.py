@@ -268,8 +268,8 @@ class CatalogService:
         method = {"groups": self.textbook_inventory.group_detail, "materials": self.textbook_inventory.material_detail, "spectra": self.textbook_inventory.spectrum_detail}[kind]
         return method(candidate_id)
 
-    def textbook_inventory_unified_detail(self, kind: str, candidate_id: str) -> dict[str, Any] | None:
-        return self.textbook_inventory.unified_detail(kind, candidate_id) if self.textbook_inventory else None
+    def textbook_inventory_unified_detail(self, kind: str, candidate_id: str, offset: int = 0, limit: int = 12, threshold: int = 12) -> dict[str, Any] | None:
+        return self.textbook_inventory.unified_detail(kind, candidate_id, offset=offset, limit=limit, threshold=threshold) if self.textbook_inventory else None
 
     def textbook_inventory_asset(self, book: str, asset_path: str) -> Path | None:
         return self.textbook_inventory.asset_path(book, asset_path) if self.textbook_inventory else None

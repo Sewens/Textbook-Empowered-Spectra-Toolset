@@ -170,7 +170,13 @@ export async function fetchTextbookInventoryDetail(kind: import("./types").Textb
   return response.data
 }
 
-export async function fetchTextbookInventoryUnifiedDetail(kind: "materials" | "spectra", candidateId: string): Promise<import("./types").UnifiedTextbookDetail> {
-  const response = await api.get<import("./types").UnifiedTextbookDetail>("/catalog/textbook-inventory/details/" + kind + "/" + encodeURIComponent(candidateId))
+export async function fetchTextbookInventoryUnifiedDetail(kind: "materials" | "spectra", candidateId: string, options?: { offset?: number; limit?: number; threshold?: number }): Promise<import("./types").UnifiedTextbookDetail> {
+  const response = await api.get<import("./types").UnifiedTextbookDetail>("/catalog/textbook-inventory/details/" + kind + "/" + encodeURIComponent(candidateId), {
+    params: {
+      offset: options?.offset ?? 0,
+      limit: options?.limit ?? 12,
+      threshold: options?.threshold ?? 12,
+    },
+  })
   return response.data
 }

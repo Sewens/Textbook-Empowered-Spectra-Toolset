@@ -97,10 +97,16 @@ def build_router(service: CatalogService) -> APIRouter:
         return {"total": len(books), "items": books}
 
     @router.get("/textbook-inventory/details/{kind}/{candidate_id}")
-    def textbook_inventory_unified_detail(kind: str, candidate_id: str) -> dict:
+    def textbook_inventory_unified_detail(
+        kind: str,
+        candidate_id: str,
+        offset: int = Query(default=0, ge=0),
+        limit: int = Query(default=12, ge=1, le=50),
+        threshold: int = Query(default=12, ge=1, le=200),
+    ) -> dict:
         if kind not in {"materials", "spectra"}:
             raise HTTPException(status_code=404, detail="Inventory detail kind not found")
-        item = service.textbook_inventory_unified_detail(kind, candidate_id)
+        item = service.textbook_inventory_unified_detail(kind, candidate_id, offset=offset, limit=limit, threshold=threshold)
         if item is None:
             raise HTTPException(status_code=404, detail="Inventory candidate not found")
         return item

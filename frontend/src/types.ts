@@ -299,5 +299,24 @@ export interface TextbookInventoryDetail extends TextbookInventoryRow {
 export interface UnifiedEvidence { id: string; type?: string; text?: string; page?: number; content_list_index?: number; bbox?: number[] }
 export interface UnifiedImage { id: string; book: string; path: string; caption?: string }
 export interface UnifiedSpectrum { id: string; caption?: string; page?: number; content_list_index?: number; features: Array<Record<string, any>>; images: UnifiedImage[]; evidence: UnifiedEvidence[] }
-export interface UnifiedSourceCard { book: string; source_id?: string; page?: number; content_list_index?: number; materials: Array<{ id: string; name?: string; source_forms?: string[]; material_type?: string }>; groups: Array<{ id: string; name?: string }>; spectra: UnifiedSpectrum[]; evidence: UnifiedEvidence[] }
-export interface UnifiedTextbookDetail { detail_kind: "material" | "spectrum"; id: string; title: string; review_status: string; books: string[]; source_count: number; source_cards: UnifiedSourceCard[] }
+export interface UnifiedSourceCounts { spectra_total: number; spectra_returned: number; evidence_total: number; evidence_returned: number; images_returned: number; truncated: boolean }
+export interface UnifiedSourceCard { book: string; source_id?: string; page?: number; content_list_index?: number; materials: Array<{ id: string; name?: string; source_forms?: string[]; material_type?: string }>; groups: Array<{ id: string; name?: string }>; spectra: UnifiedSpectrum[]; evidence: UnifiedEvidence[]; counts?: UnifiedSourceCounts }
+export interface UnifiedDetailCounts { spectra_total: number; evidence_total: number; images_total?: number; images_returned?: number; returned?: number; threshold?: number; stream?: boolean; truncated?: boolean }
+export interface UnifiedDetailPage { offset: number; limit: number; returned: number; has_more: boolean; next_offset: number | null }
+export interface UnifiedStreamItem { book: string; source_id?: string; page?: number; content_list_index?: number; spectrum: UnifiedSpectrum }
+export interface UnifiedBookSummary { book: string; source_id?: string; page?: number; content_list_index?: number; materials: Array<{ id: string; name?: string }>; groups: Array<{ id: string; name?: string }>; spectra_total: number; evidence_total: number; images_total: number }
+export interface UnifiedTextbookDetail {
+  detail_kind: "material" | "spectrum"
+  id: string
+  title: string
+  review_status: string
+  books: string[]
+  source_count: number
+  materials?: Array<{ id: string; name?: string }>
+  groups?: Array<{ id: string; name?: string }>
+  book_summaries?: UnifiedBookSummary[]
+  items?: UnifiedStreamItem[]
+  page?: UnifiedDetailPage
+  source_cards: UnifiedSourceCard[]
+  counts?: UnifiedDetailCounts
+}
