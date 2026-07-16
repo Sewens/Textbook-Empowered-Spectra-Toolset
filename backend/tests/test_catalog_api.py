@@ -79,14 +79,14 @@ def test_catalog_routes_expose_textbook_inventory(tmp_path):
     release = tmp_path / "release"
     release.mkdir()
     (release / "DATA_INVENTORY.json").write_text(json.dumps({"release_id": "api-demo"}), encoding="utf-8")
-    catalog = CatalogService(release, tmp_path / "catalog.sqlite", textbook_inventory_path=inventory)
+    catalog = CatalogService(release, tmp_path / "catalog.sqlite", textbook_inventory_path=inventory, source_outputs_path=tmp_path / "outputs")
     app = FastAPI()
     app.include_router(build_router(catalog), prefix="/api")
     client = TestClient(app)
     assert client.get("/api/catalog/textbook-inventory/overview").json()["book_count"] == 1
     assert client.get("/api/catalog/textbook-inventory/materials").json()["items"][0]["candidate_id"] == "MAT_A"
     assert client.get("/api/catalog/textbook-inventory/spectra/SPEC_A").json()["source_records"][0]["book"] == "教材甲"
-    asset = inventory / "教材甲" / "unzipped" / "images"
+    asset = tmp_path / "outputs" / "教材甲" / "unzipped" / "images"
     asset.mkdir(parents=True)
     (asset / "figure.txt").write_text("asset", encoding="utf-8")
-    assert client.get("/api/catalog/textbook-inventory/assets/%E6%95%99%E6%9D%90%E7%94%B2/images/figure.txt").text == "asset"
+    assert client.get("/api/catalog/textbook-inventory/assets/%E6%95%99%E6%9D%90%E7%94%B2/images/figure.txt", headers={"X-User-Role": "ordinary_user"}).text == "asset"

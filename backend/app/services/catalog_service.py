@@ -9,12 +9,12 @@ from app.services.textbook_inventory_service import TextbookInventoryService
 
 
 class CatalogService:
-    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None) -> None:
+    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None, source_outputs_path: Path | None = None) -> None:
         self.release_path = Path(release_path)
         self.legacy_reference_path = Path(legacy_reference_path) if legacy_reference_path else None
         self.database_path = Path(database_path)
         self.terminology = TerminologyCatalogService(terminology_path)
-        self.textbook_inventory = TextbookInventoryService(textbook_inventory_path) if textbook_inventory_path else None
+        self.textbook_inventory = TextbookInventoryService(textbook_inventory_path, source_outputs_path) if textbook_inventory_path else None
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_index()
 

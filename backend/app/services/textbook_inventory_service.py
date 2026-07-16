@@ -8,8 +8,9 @@ from typing import Any
 class TextbookInventoryService:
     """Lazy reader for the broad, source-preserving textbook staging catalogs."""
 
-    def __init__(self, inventory_path: Path | None = None) -> None:
+    def __init__(self, inventory_path: Path | None = None, source_outputs_path: Path | None = None) -> None:
         self.inventory_path = Path(inventory_path) if inventory_path else None
+        self.source_outputs_path = Path(source_outputs_path) if source_outputs_path else None
         self._catalogs: dict[str, dict[str, Any]] = {}
         self._books: dict[str, dict[str, Any]] = {}
 
@@ -114,9 +115,12 @@ class TextbookInventoryService:
         return self._summary_item(kind, item) | {"source_records": source_records}
 
     def asset_path(self, book: str, asset_path: str) -> Path | None:
-        if not self.available or book not in self.books():
+        if not self.available or book not in self.books() or not self.source_outputs_path:
             return None
-        base = (self.inventory_path / book / "unzipped").resolve()
+        base_root = self.source_outputs_path.resolve()
+        base = (base_root / book / "unzipped").resolve()
+        if base_root not in base.parents:
+            return None
         candidate = (base / asset_path).resolve()
         if base not in candidate.parents or not candidate.is_file():
             return None

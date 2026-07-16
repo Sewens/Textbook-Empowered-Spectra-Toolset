@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
+from app.core.security import CurrentUser, require_permission
 from app.services.catalog_service import CatalogService
 
 
@@ -92,7 +93,7 @@ def build_router(service: CatalogService) -> APIRouter:
         return {"total": len(books), "items": books}
 
     @router.get("/textbook-inventory/assets/{book}/{asset_path:path}")
-    def textbook_inventory_asset(book: str, asset_path: str):
+    def textbook_inventory_asset(book: str, asset_path: str, _user: CurrentUser = Depends(require_permission("evidence:read"))):
         path = service.textbook_inventory_asset(book, asset_path)
         if path is None:
             raise HTTPException(status_code=404, detail="Inventory asset not found")
