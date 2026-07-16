@@ -32,7 +32,7 @@ export default function TextbookInventoryPage() {
   const data = overview.data
   if (!data?.available) return <Alert type="warning" message="教材 staging 目录不可用" description="请检查 0714谱构效数据/material_spectra 的配置路径。" />
   return <div className="panel full-panel">
-    <div className="panel-head"><div><h2>教材物质—基团—光谱候选</h2><small>{data.run_id} · 31本教材 · 宽召回 staging</small></div><Tag color="warning">candidate_needs_review</Tag></div>
+    <div className="panel-head"><div><h2>教材物质—基团—光谱候选</h2><small>{data.run_id} · {data.book_count}本教材 · 宽召回 staging</small></div><Tag color="warning">candidate_needs_review</Tag></div>
     <div className="panel-body">
       <Alert type="info" showIcon message="本页展示 MinerU 全量候选，不等同于已审核事实；原始教材来源、证据和图片路径在详情中保留。" />
       <div className="stat-grid" style={{ margin: "18px 0" }}>
