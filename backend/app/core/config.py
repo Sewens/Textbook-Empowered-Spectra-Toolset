@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     legacy_reference_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "basic_groups_v07_20260619"
     docs_summary_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "docs" / "ir_ie_v07_core_data_model_v20260622.summary.json"
     terminology_catalog_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "terminology" / "_terminology_catalog.json"
-    textbook_inventory_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "material_spectra_clean"
+    textbook_inventory_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "material_spectra"
     mineru_outputs_path: Path = Path(__file__).resolve().parents[3].parent.parent / "20260616 谱学教科书知识抽取加强版" / "outputs"
     nist_index_path: Path = Path("/share/lawbda/spectra_nist/nist_multimodal.sqlite")
 
