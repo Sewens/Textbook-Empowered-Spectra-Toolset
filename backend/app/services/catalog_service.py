@@ -6,15 +6,17 @@ from typing import Any
 
 from app.services.terminology_service import TerminologyCatalogService
 from app.services.textbook_inventory_service import TextbookInventoryService
+from app.services.material_spectrum_evidence_service import MaterialSpectrumEvidenceService
 
 
 class CatalogService:
-    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None, source_outputs_path: Path | None = None) -> None:
+    def __init__(self, release_path: Path, database_path: Path, legacy_reference_path: Path | None = None, terminology_path: Path | None = None, textbook_inventory_path: Path | None = None, source_outputs_path: Path | None = None, material_spectrum_evidence_path: Path | None = None) -> None:
         self.release_path = Path(release_path)
         self.legacy_reference_path = Path(legacy_reference_path) if legacy_reference_path else None
         self.database_path = Path(database_path)
         self.terminology = TerminologyCatalogService(terminology_path)
         self.textbook_inventory = TextbookInventoryService(textbook_inventory_path, source_outputs_path) if textbook_inventory_path else None
+        self.material_spectrum_evidence = MaterialSpectrumEvidenceService(inventory_path=textbook_inventory_path, release_path=material_spectrum_evidence_path)
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_index()
 
@@ -24,7 +26,13 @@ class CatalogService:
         counts.update(self.terminology.overview_counts())
         if self.textbook_inventory:
             counts.update(self.textbook_inventory.counts())
-        return {"release_id": inventory.get("release_id", self.release_path.name), "schema_release": inventory.get("schema_release"), "packet_schema": inventory.get("packet_schema"), "release_status": inventory.get("release_status"), "counts": counts, "data_partitions": {"accepted_textbook_packets": inventory.get("textbooks", {}).get("accepted_packets", 0), "nist_metadata_records": inventory.get("nist", {}).get("metadata_records", 0), "terminology_catalog": self.terminology.available, "quarantine_included": False, "nist_is_staging": True}}
+        if self.material_spectrum_evidence.available:
+            evidence_overview = self.material_spectrum_evidence.overview()
+            counts["evidence"] = evidence_overview.get("total", 0)
+            counts["material_spectrum_evidence_links"] = evidence_overview.get("total", 0)
+            counts["material_spectrum_evidence_high"] = evidence_overview.get("by_strength", {}).get("high", 0)
+            counts["material_spectrum_evidence_medium"] = evidence_overview.get("by_strength", {}).get("medium", 0)
+        return {"release_id": inventory.get("release_id", self.release_path.name), "schema_release": inventory.get("schema_release"), "packet_schema": inventory.get("packet_schema"), "release_status": inventory.get("release_status"), "counts": counts, "data_partitions": {"accepted_textbook_packets": inventory.get("textbooks", {}).get("accepted_packets", 0), "nist_metadata_records": inventory.get("nist", {}).get("metadata_records", 0), "terminology_catalog": self.terminology.available, "quarantine_included": False, "nist_is_staging": True, "material_spectrum_evidence": self.material_spectrum_evidence.available}}
 
     def list_entities(self, entity_type: str, query: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
         sql, values = "SELECT * FROM entity WHERE entity_type = ?", [entity_type]
@@ -56,7 +64,25 @@ class CatalogService:
         with self._connect() as con:
             return [self._spectrum(row) for row in con.execute(sql, values)]
 
-    def list_evidence(self, query: str | None = None, limit: int = 100) -> list[dict[str, Any]]:
+    def list_evidence(self, query: str | None = None, limit: int = 100, strength: str | None = None) -> list[dict[str, Any]]:
+        if self.material_spectrum_evidence.available:
+            items = self.material_spectrum_evidence.list_links(query=query, strength=strength, limit=limit)
+            return [{
+                "evidence_id": item.get("evidence_link_id") or item.get("evidence_id"),
+                "source_id": item.get("source_id"),
+                "evidence_type": item.get("evidence_type"),
+                "text": item.get("text"),
+                "source_scope": item.get("source_scope", "textbook"),
+                "review_status": item.get("review_status", "precision_screened_needs_review"),
+                "material_id": item.get("material_id"),
+                "material_name": item.get("material_name"),
+                "spectrum_id": item.get("spectrum_id"),
+                "book": item.get("book"),
+                "page": item.get("page"),
+                "support_strength": item.get("support_strength"),
+                "image_paths": item.get("image_paths", []),
+                "payload": item.get("payload") or item,
+            } for item in items]
         sql, values = "SELECT * FROM evidence", []
         if query:
             sql += " WHERE lower(text) LIKE ? OR lower(evidence_id) LIKE ?"

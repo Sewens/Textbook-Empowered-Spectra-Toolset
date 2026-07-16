@@ -93,3 +93,34 @@ def test_catalog_routes_expose_textbook_inventory(tmp_path):
     asset.mkdir(parents=True)
     (asset / "figure.txt").write_text("asset", encoding="utf-8")
     assert client.get("/api/catalog/textbook-inventory/assets/%E6%95%99%E6%9D%90%E7%94%B2/images/figure.txt", headers={"X-User-Role": "ordinary_user"}).text == "asset"
+
+
+def test_catalog_routes_expose_material_spectrum_support_evidence(tmp_path):
+    inventory = tmp_path / "accepted"
+    inventory.mkdir()
+    (inventory / "_all_books_summary.json").write_text(json.dumps({"run_id": "run-test", "book_count": 1, "books": [{"book": "教材甲"}]}, ensure_ascii=False), encoding="utf-8")
+    book = inventory / "教材甲"
+    book.mkdir()
+    (book / "material_spectra.json").write_text(json.dumps({
+        "source": {"source_id": "SRC_A"},
+        "material_candidates": [{"material_candidate_id": "MAT_WATER", "canonical_name_candidate": "water", "spectrum_ids": ["SPEC_1"], "evidence_ids": ["EV_1"]}],
+        "spectrum_candidates": [{"spectrum_candidate_id": "SPEC_1", "material_candidate_ids": ["MAT_WATER"], "evidence_ids": ["EV_1"], "image_candidate_ids": ["IMG_1"], "caption_or_context": "Figure of water", "source_page": 30}],
+        "evidence_spans": [{"evidence_id": "EV_1", "evidence_type": "chart", "locator": {"pdf_page": 30, "content_list_index": 10}, "text_original": "Figure 1.3 spectrum of water vapor."}],
+        "image_candidates": [{"image_candidate_id": "IMG_1", "source_image_path": "images/demo.jpg"}],
+    }, ensure_ascii=False), encoding="utf-8")
+    evidence_release = tmp_path / "material-spectrum-evidence-v1.0.0"
+    # build from inventory path through service constructor inventory fallback
+    release = tmp_path / "release"
+    release.mkdir()
+    (release / "DATA_INVENTORY.json").write_text(json.dumps({"release_id": "api-demo"}), encoding="utf-8")
+    catalog = CatalogService(release, tmp_path / "catalog.sqlite", textbook_inventory_path=inventory, material_spectrum_evidence_path=evidence_release)
+    app = FastAPI()
+    app.include_router(build_router(catalog), prefix="/api")
+    client = TestClient(app)
+    payload = client.get("/api/catalog/evidence?limit=20").json()
+    assert payload["total"] >= 1
+    item = payload["items"][0]
+    assert item["material_name"] == "water"
+    assert item["spectrum_id"] == "SPEC_1"
+    assert item["support_strength"] in {"high", "medium"}
+    assert client.get("/api/catalog/overview").json()["counts"]["evidence"] >= 1

@@ -249,6 +249,13 @@ export interface CatalogEvidence {
   text: string | null
   source_scope: "textbook" | "nist"
   review_status: string
+  material_id?: string | null
+  material_name?: string | null
+  spectrum_id?: string | null
+  book?: string | null
+  page?: number | null
+  support_strength?: "high" | "medium" | "low" | null
+  image_paths?: string[]
   payload: Record<string, unknown>
 }
 

@@ -98,8 +98,8 @@ export async function fetchCatalogSpectra(source_scope?: "textbook" | "nist", q?
   return response.data.items
 }
 
-export async function fetchCatalogEvidence(q?: string) {
-  const response = await api.get<{ total: number; items: import("./types").CatalogEvidence[] }>("/catalog/evidence", { params: { q } })
+export async function fetchCatalogEvidence(q?: string, strength?: "high" | "medium" | "low") {
+  const response = await api.get<{ total: number; items: import("./types").CatalogEvidence[] }>("/catalog/evidence", { params: { q, strength, limit: 500 } })
   return response.data.items
 }
 

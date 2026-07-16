@@ -63,8 +63,8 @@ def build_router(service: CatalogService) -> APIRouter:
         return {"total": len(items), "items": items}
 
     @router.get("/evidence")
-    def evidence(q: str | None = Query(default=None), limit: int = Query(default=100, le=500)) -> dict:
-        items = service.list_evidence(q, limit)
+    def evidence(q: str | None = Query(default=None), strength: str | None = Query(default=None, pattern="^(high|medium|low)?$"), limit: int = Query(default=300, le=2000)) -> dict:
+        items = service.list_evidence(q, limit, strength)
         return {"total": len(items), "items": items}
 
     @router.get("/claims")
