@@ -184,6 +184,7 @@ class CatalogService:
         paths = [self.release_path / "DATA_INVENTORY.json", self.release_path / "nist" / "metadata_inventory" / "nist_ir_metadata_inventory.jsonl"] + sorted((self.release_path / "textbooks" / "accepted_packets").glob("*.json"))
         if self.legacy_reference_path and self.legacy_reference_path.exists():
             paths.extend(sorted(self.legacy_reference_path.glob("FG_*.json")))
+            paths.append(self.legacy_reference_path / "legacy_spectrum_provenance.json")
         for path in paths:
             if path.exists():
                 stat = path.stat()
@@ -296,6 +297,7 @@ class CatalogService:
         if not self.legacy_reference_path or not self.legacy_reference_path.exists():
             return
         scope, source_id = "legacy_reference", "SRC_LEGACY_IR_REFERENCE_V07"
+        provenance_records = self._read_json(self.legacy_reference_path / "legacy_spectrum_provenance.json", {}).get("records", {})
         self._put_entity(con, source_id, "source", "IR Reference Cards v0.7", scope, "reference", {"source_type": "legacy_reference"})
         for path in sorted(self.legacy_reference_path.glob("FG_*.json")):
             group = self._read_json(path, {})
@@ -306,13 +308,14 @@ class CatalogService:
             self._put_entity(con, group_id, "group", name, scope, "reference", group)
             self._rel(con, source_id, group_id, "defines", scope, {})
             for item in group.get("spectral_gallery", []):
+                spectrum_id = item.get("spectrum_id") or item.get("figure_id")
+                provenance = provenance_records.get(spectrum_id, {})
                 material_id = item.get("compound_id") or "MAT_LEGACY_" + hashlib.sha1((item.get("smiles") or item.get("compound_name_en") or item.get("compound_name_zh") or item.get("figure_id", "")).encode()).hexdigest()[:16]
-                material = {"material_id": material_id, "name_zh": item.get("compound_name_zh"), "name_en": item.get("compound_name_en"), "formula": item.get("molecular_formula"), "smiles": item.get("smiles")}
+                material = {"material_id": material_id, "name_zh": item.get("compound_name_zh"), "name_en": item.get("compound_name_en"), "formula": item.get("molecular_formula"), "smiles": item.get("smiles"), "provenance": provenance}
                 self._put_entity(con, material_id, "material", item.get("compound_name_zh") or item.get("compound_name_en") or material_id, scope, "reference", material)
                 self._rel(con, group_id, material_id, "has_reference_material", scope, {"group_id": group_id})
-                spectrum_id = item.get("spectrum_id") or item.get("figure_id")
                 if spectrum_id:
-                    payload = item | {"group_id": group_id, "image_url": self._legacy_image_url(item.get("mineru_crop_image_path") or item.get("image_path"))}
+                    payload = item | {"group_id": group_id, "image_url": self._legacy_image_url(item.get("mineru_crop_image_path") or item.get("image_path")), "provenance": provenance}
                     self._put_entity(con, spectrum_id, "spectrum", spectrum_id, scope, "reference", payload)
                     con.execute("INSERT OR REPLACE INTO spectrum VALUES (?, ?, ?, ?, ?, ?, ?)", (spectrum_id, material_id, "IR", "reference_card", scope, "reference", self._dump(payload)))
                     self._rel(con, material_id, spectrum_id, "has_spectrum", scope, {"group_id": group_id})

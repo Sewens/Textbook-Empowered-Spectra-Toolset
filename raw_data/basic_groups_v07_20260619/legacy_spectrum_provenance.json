@@ -1,0 +1,27 @@
+{
+  "schema_version": "legacy_spectrum_provenance_v1",
+  "records": {
+    "SPEC_FG_AROMATIC_CH_BATCH1_CMPD_META_XYLENE_004": {
+      "source_type": "textbook",
+      "book": "Infrared Spectral Interpretation: A Systematic Approach",
+      "figure": "Figure 2.24",
+      "mineru_locator": {
+        "page_group_index": 70,
+        "content_item_index": 2,
+        "bbox": [91, 302, 871, 400]
+      },
+      "source_text": "The spectrum of meta-xylene is shown in Figure 2.24."
+    },
+    "SPEC_FG_AROMATIC_SKELETON_BATCH1_CMPD_META_XYLENE_004": {
+      "source_type": "textbook",
+      "book": "Infrared Spectral Interpretation: A Systematic Approach",
+      "figure": "Figure 2.24",
+      "mineru_locator": {
+        "page_group_index": 70,
+        "content_item_index": 2,
+        "bbox": [91, 302, 871, 400]
+      },
+      "source_text": "The spectrum of meta-xylene is shown in Figure 2.24."
+    }
+  }
+}
