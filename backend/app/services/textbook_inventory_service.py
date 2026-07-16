@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,7 @@ class TextbookInventoryService:
         self.source_outputs_path = Path(source_outputs_path) if source_outputs_path else None
         self._catalogs: dict[str, dict[str, Any]] = {}
         self._books: dict[str, dict[str, Any]] = {}
+        self._relationship_graph_cache: tuple[tuple[int, int], dict[str, Any]] | None = None
 
     @property
     def available(self) -> bool:
@@ -167,7 +169,11 @@ class TextbookInventoryService:
         """Return the all-material graph from conservative name-grounded rules."""
         overview = self.overview()
         if not overview.get("available"):
-            return {"run_id": None, "nodes": [], "edges": [], "stats": {}}
+            return {"run_id": None, "layout_key": None, "nodes": [], "edges": [], "stats": {}}
+        source_key = self._relationship_source_key()
+        if self._relationship_graph_cache and self._relationship_graph_cache[0] == source_key:
+            return self._relationship_graph_cache[1]
+        self._catalogs.pop("materials", None)
         materials, memberships, rules = [], {}, {}
         for item in self._load("materials").get("materials", []):
             summary = self._summary_item("materials", item)
@@ -189,7 +195,19 @@ class TextbookInventoryService:
                 shared = memberships[left] & memberships[right]
                 if len(shared) >= 2:
                     edges.append({"id": f"{left}__shares_functional_groups__{right}", "source": left, "target": right, "relation_type": "shares_functional_groups", "label": "共享基础基团", "derivation": "group_overlap", "shared_group_ids": sorted(shared), "shared_group_count": len(shared)})
-        return {"run_id": overview.get("run_id"), "nodes": nodes, "edges": edges, "stats": {"functional_groups": len(group_ids), "materials": len(materials), "material_group_edges": sum(edge["relation_type"] == "has_functional_group" for edge in edges), "material_similarity_edges": sum(edge["relation_type"] == "shares_functional_groups" for edge in edges), "unresolved_materials": sum(not groups for groups in memberships.values())}, "policy": {"structural_edges": "name_rule_derived", "contextual_group_candidates_included": False, "material_similarity": "shared_two_or_more_high_confidence_groups"}}
+        graph = {"run_id": overview.get("run_id"), "layout_key": self._relationship_layout_key(nodes, edges), "nodes": nodes, "edges": edges, "stats": {"functional_groups": len(group_ids), "materials": len(materials), "material_group_edges": sum(edge["relation_type"] == "has_functional_group" for edge in edges), "material_similarity_edges": sum(edge["relation_type"] == "shares_functional_groups" for edge in edges), "unresolved_materials": sum(not groups for groups in memberships.values())}, "policy": {"structural_edges": "name_rule_derived", "contextual_group_candidates_included": False, "material_similarity": "shared_two_or_more_high_confidence_groups"}}
+        self._relationship_graph_cache = (source_key, graph)
+        return graph
+
+    def _relationship_source_key(self) -> tuple[int, int]:
+        path = self.inventory_path / "_compound_catalog.json"
+        stat = path.stat()
+        return stat.st_mtime_ns, stat.st_size
+
+    @staticmethod
+    def _relationship_layout_key(nodes: list[dict[str, Any]], edges: list[dict[str, Any]]) -> str:
+        payload = {"nodes": sorted(node["id"] for node in nodes), "edges": sorted(edge["id"] for edge in edges)}
+        return hashlib.sha256(json.dumps(payload, separators=(",", ":")).encode("utf-8")).hexdigest()[:16]
 
     @classmethod
     def _structural_groups_for_name(cls, name: str) -> dict[str, list[str]]:

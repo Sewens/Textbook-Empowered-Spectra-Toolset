@@ -19,7 +19,11 @@ def test_material_relationship_graph_derives_only_high_confidence_structural_edg
         {"material_candidate_id": "MAT_UNKNOWN", "source_records": [{"book": "教材甲", "record": {"canonical_name_candidate": "实验样品甲"}}]},
     ]})
 
-    graph = TextbookInventoryService(inventory).material_relationship_graph()
+    service = TextbookInventoryService(inventory)
+    graph = service.material_relationship_graph()
+    repeated_graph = service.material_relationship_graph()
+    assert graph["layout_key"] == repeated_graph["layout_key"]
+    assert len(graph["layout_key"]) == 16
     nodes = {node["id"]: node for node in graph["nodes"]}
     edges = graph["edges"]
 
