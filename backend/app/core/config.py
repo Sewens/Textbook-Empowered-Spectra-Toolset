@@ -10,6 +10,13 @@ def default_release_path() -> Path:
     return upgraded if upgraded.exists() else repo_root / "raw_data" / "IR-Spectroscopy-KG-Data-v0.1.1-alpha.20260715"
 
 
+def default_textbook_inventory_path() -> Path:
+    repo_root = Path(__file__).resolve().parents[3]
+    bundled = repo_root / "data" / "releases" / "textbook-materials-v1.0.0" / "accepted"
+    external = repo_root.parent.parent / "0714谱构效数据" / "material_spectra_accepted"
+    return bundled if bundled.exists() else external
+
+
 class Settings(BaseSettings):
     app_name: str = "Spectrum-Structure-Effect Knowledge API"
     api_prefix: str = "/api"
@@ -20,7 +27,7 @@ class Settings(BaseSettings):
     legacy_reference_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "basic_groups_v07_20260619"
     docs_summary_path: Path = Path(__file__).resolve().parents[3] / "raw_data" / "docs" / "ir_ie_v07_core_data_model_v20260622.summary.json"
     terminology_catalog_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "terminology" / "_terminology_catalog.json"
-    textbook_inventory_path: Path = Path(__file__).resolve().parents[3].parent.parent / "0714谱构效数据" / "material_spectra_accepted"
+    textbook_inventory_path: Path = default_textbook_inventory_path()
     mineru_outputs_path: Path = Path(__file__).resolve().parents[3].parent.parent / "20260616 谱学教科书知识抽取加强版" / "outputs"
     nist_index_path: Path = Path("/share/lawbda/spectra_nist/nist_multimodal.sqlite")
 
